@@ -6,7 +6,7 @@
 # It is included in the main 'build.ninja'.
 
 # =============================================================================
-# Project: SO_p0
+# Project: SO_P0
 # Configurations: Debug
 # =============================================================================
 # =============================================================================
@@ -14,7 +14,7 @@
 #############################################
 # Rule for compiling C files.
 
-rule C_COMPILER__SO_p0_unscanned_Debug
+rule C_COMPILER__SO_P0_unscanned_Debug
   depfile = $DEP_FILE
   deps = gcc
   command = /usr/bin/cc $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
@@ -24,7 +24,7 @@ rule C_COMPILER__SO_p0_unscanned_Debug
 #############################################
 # Rule for linking C executable.
 
-rule C_EXECUTABLE_LINKER__SO_p0_Debug
+rule C_EXECUTABLE_LINKER__SO_P0_Debug
   command = $PRE_LINK && /usr/bin/cc $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
   description = Linking C executable $TARGET_FILE
   restat = $RESTAT
@@ -42,7 +42,7 @@ rule CUSTOM_COMMAND
 # Rule for re-running cmake.
 
 rule RERUN_CMAKE
-  command = /home/tomas/UDC/Álgebra/clion-2023.2.2/bin/cmake/linux/x64/bin/cmake --regenerate-during-build -S/home/tomas/CLionProjects/SO_p0 -B/home/tomas/CLionProjects/SO_p0/cmake-build-debug
+  command = /home/tomas/UDC/Álgebra/clion-2023.2.2/bin/cmake/linux/x64/bin/cmake --regenerate-during-build -S/home/tomas/CLionProjects/SO_P0 -B/home/tomas/CLionProjects/SO_P0/cmake-build-debug
   description = Re-running CMake...
   generator = 1
 

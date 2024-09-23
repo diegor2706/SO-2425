@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
-project(SO_p0 C)
+project(SO_P0 C)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 
-add_executable(SO_p0 main.c)
+add_executable(SO_P0 main.c
+        Lista.c)
