@@ -23,16 +23,13 @@ void createEmptyList(tList *L);
 bool isEmptyList(tList L);
 bool createNode(tPosL *p);
 bool insertItem(tItemL d, tPosL p, tList *L);
-void updateItem(tItemL d, tPosL p, tList *L);
+void updateItem(tItemL d, tPosL p, tList *L);   //quitar
 tPosL findItem(tItemL d, tList L);
 element getItem(tPosL p, tList L);
 tPosL first(tList L);
 tPosL last(tList L);
 tPosL next(tPosL p, tList L);
 void deleteAtPosition(tPosL p, tList *L);
-
-
-
 
 
 #endif //SO_P0_LISTA_H

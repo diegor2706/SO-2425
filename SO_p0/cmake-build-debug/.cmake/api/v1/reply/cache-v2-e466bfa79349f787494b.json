@@ -55,7 +55,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/tomas/CLionProjects/SO_P0/cmake-build-debug"
+			"value" : "/home/tomas/Escritorio/SO-2425/SO_p0/cmake-build-debug"
 		},
 		{
 			"name" : "CMAKE_CACHE_MAJOR_VERSION",
@@ -415,7 +415,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/tomas/CLionProjects/SO_P0/cmake-build-debug/CMakeFiles/pkgRedirects"
+			"value" : "/home/tomas/Escritorio/SO-2425/SO_p0/cmake-build-debug/CMakeFiles/pkgRedirects"
 		},
 		{
 			"name" : "CMAKE_GENERATOR",
@@ -475,7 +475,7 @@
 				}
 			],
 			"type" : "INTERNAL",
-			"value" : "/home/tomas/CLionProjects/SO_P0"
+			"value" : "/home/tomas/Escritorio/SO-2425/SO_p0"
 		},
 		{
 			"name" : "CMAKE_INSTALL_PREFIX",
@@ -1007,7 +1007,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/tomas/CLionProjects/SO_P0/cmake-build-debug"
+			"value" : "/home/tomas/Escritorio/SO-2425/SO_p0/cmake-build-debug"
 		},
 		{
 			"name" : "SO_P0_IS_TOP_LEVEL",
@@ -1031,7 +1031,7 @@
 				}
 			],
 			"type" : "STATIC",
-			"value" : "/home/tomas/CLionProjects/SO_P0"
+			"value" : "/home/tomas/Escritorio/SO-2425/SO_p0"
 		},
 		{
 			"name" : "_CMAKE_LINKER_PUSHPOP_STATE_SUPPORTED",

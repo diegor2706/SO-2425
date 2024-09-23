@@ -8,6 +8,22 @@
 #include <stdbool.h>
 #include <time.h>
 #include "Lista.h"
+#include <ctype.h>
+#include <stdlib.h>
+
+void historial (char cadena[], tList L, bool terminado);
+
+
+int esNumero(char cadena[]) {
+    // Recorrer cada carácter de la cadena
+    for (int i = 0; i < strlen(cadena); i++) {
+        // Si algún carácter no es un dígito, devolvemos 0 (falso)
+        if (!isdigit(cadena[i])) {
+            return 0; // No es un número
+        }
+    }
+    return 1; // Es un número
+}
 
 
 int TrocearCadena(char * cadena, char * trozos[])
@@ -139,26 +155,6 @@ void Cmd_open (char * tr[])
     }
 */
 
-void historial (char cadena[], tList L){
-
-    tPosL i; // posición del comando en la lista
-    int p = 0; // posición del comando en el historial
-
-    if (cadena == NULL) { // imprimir el historial entero
-        for (i = first(L); i != LNULL; i = next(i,L)){
-            printf("%i -> %s",p,i->elemento.datos);
-            p++;
-        }
-    }
-    else if (strcmp("N", cadena) == 0){ //  repetir el comando número N
-
-    }
-    else if (strcmp("-N", cadena) == 0){ ;// repetir los últimos N comandos
-
-    }else{
-        printf("Comando 'historic %s' no reconocido\n", cadena);
-    }
-}
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
     TrocearCadena(cadena, trozos);
@@ -180,7 +176,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
             /* Cmd_open(trozos[1]); */
         }
         else if(strcmp("historic", trozos[0]) == 0) {
-            historial(trozos[1],L);
+            historial(trozos[1],L, *terminado);
         }
         else{
             printf("Comando no reconocido\n");
@@ -192,6 +188,39 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
     }
 }
 
+
+
+void historial (char cadena[], tList L, bool terminado) {
+
+    tPosL i; // posición del comando en la lista
+    int p = 0; // posición del comando en el historial
+    int aux;
+
+    char *trozos[10];
+
+    if (cadena == NULL) { // imprimir el historial entero
+        for (i = first(L); i != LNULL; i = next(i,L)){
+            printf("%i -> %s",p,i->elemento.datos);
+            p++;
+        }
+    }
+    else if (esNumero(cadena)){ //  repetir el comando número N
+        aux = atoi(cadena);
+        for (i = first(L); p != aux ; i = next(i,L)){
+            p++;
+        }
+        procesarEntrada( i->elemento.datos, trozos,&terminado, L);
+    }
+    else if (strcmp("-N", cadena) == 0){ ;// repetir los últimos N comandos
+       /* aux = atoi(cadena);
+        for (i = first(L); p != aux ; i = next(i,L)){
+            printf("%i -> %s",p,i->elemento.datos);
+            p++;
+            printf("hola\n"); */
+    }else{
+        printf("Comando 'historic %s' no reconocido\n", cadena);
+    }
+}
 
 int main() {
 
@@ -207,6 +236,5 @@ int main() {
         leerEntrada(cadena,&L);
         procesarEntrada(cadena, trozos, &terminado,L);
     }
-
     return 0;
 }
