@@ -21,30 +21,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="16f7e957-412e-45ba-bc1f-08f2e772fae8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SO_p0/Lista.h" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/Lista.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SO_p0/a.out" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/a.out" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/.cmake/api/v1/reply/cache-v2-43b92d2bc5e2cc89e6ef.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/.cmake/api/v1/reply/cmakeFiles-v1-ade3badda2192b21ba6d.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/.cmake/api/v1/reply/codemodel-v2-02c2fbedef4260f6d4d3.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/.cmake/api/v1/reply/index-2024-09-23T11-12-55-0060.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeCache.txt" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeCache.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/3.26.4/CMakeSystem.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/3.26.4/CMakeSystem.cmake" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/CMakeConfigureLog.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/CMakeConfigureLog.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/TargetDirectories.txt" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/TargetDirectories.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/clion-Debug-log.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/rules.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/CMakeFiles/rules.ninja" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/build.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/build.ninja" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/cmake-build-debug/cmake_install.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/cmake-build-debug/cmake_install.cmake" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SO_p0/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/main.c" afterDir="false" />
     </list>
-    <list id="2ab0f139-6e0f-4f46-b25f-59dd93551e1f" name="Changes by LKL PAJILLAS" comment="">
-      <change beforePath="$PROJECT_DIR$/SO_p0/Lista.h" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/Lista.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SO_p0/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/main.c" afterDir="false" />
-    </list>
-    <list id="f1809141-577b-46cf-b154-6586605dcf1e" name="Changes by martiwiOFICIAL" comment="">
-      <change beforePath="$PROJECT_DIR$/SO_p0/main.c" beforeDir="false" afterPath="$PROJECT_DIR$/SO_p0/main.c" afterDir="false" />
-    </list>
+    <list id="2ab0f139-6e0f-4f46-b25f-59dd93551e1f" name="Changes by LKL PAJILLAS" comment="" />
+    <list id="f1809141-577b-46cf-b154-6586605dcf1e" name="Changes by martiwiOFICIAL" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -56,27 +40,6 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-  </component>
-  <component name="LineStatusTrackerManager">
-    <file path="$PROJECT_DIR$/SO_p0/main.c">
-      <ranges>
-        <range start1="10" end1="10" start2="10" end2="12" changelist="2ab0f139-6e0f-4f46-b25f-59dd93551e1f" />
-        <range start1="11" end1="11" start2="13" end2="27" changelist="16f7e957-412e-45ba-bc1f-08f2e772fae8" />
-        <range start1="140" end1="140" start2="156" end2="157" changelist="16f7e957-412e-45ba-bc1f-08f2e772fae8" />
-        <range start1="141" end1="162" start2="158" end2="158" changelist="2ab0f139-6e0f-4f46-b25f-59dd93551e1f" />
-        <range start1="182" end1="183" start2="178" end2="179" changelist="16f7e957-412e-45ba-bc1f-08f2e772fae8" />
-        <range start1="193" end1="193" start2="189" end2="191" changelist="f1809141-577b-46cf-b154-6586605dcf1e" />
-        <range start1="194" end1="194" start2="192" end2="223" changelist="2ab0f139-6e0f-4f46-b25f-59dd93551e1f" />
-        <range start1="209" end1="210" start2="238" end2="238" changelist="f1809141-577b-46cf-b154-6586605dcf1e" />
-        <range start1="212" end1="212" start2="240" end2="241" changelist="f1809141-577b-46cf-b154-6586605dcf1e" />
-      </ranges>
-    </file>
-    <file path="$PROJECT_DIR$/SO_p0/Lista.h">
-      <ranges>
-        <range start1="25" end1="26" start2="25" end2="26" changelist="16f7e957-412e-45ba-bc1f-08f2e772fae8" />
-        <range start1="34" end1="37" start2="34" end2="34" changelist="2ab0f139-6e0f-4f46-b25f-59dd93551e1f" />
-      </ranges>
-    </file>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -94,30 +57,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/home/tomas/Escritorio/SO-2425/SO_p0/CMakeLists.txt",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tomas/Escritorio/SO-2425/SO_p0/CMakeLists.txt&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="SO_P0" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="SO_P0" TARGET_NAME="SO_P0" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="SO_P0" RUN_TARGET_NAME="SO_P0">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -133,6 +91,8 @@
       <updated>1727107826014</updated>
       <workItem from="1727107827491" duration="2510000" />
       <workItem from="1727112834068" duration="4018000" />
+      <workItem from="1727171308876" duration="5878000" />
+      <workItem from="1727192232367" duration="6000" />
     </task>
     <servers />
   </component>

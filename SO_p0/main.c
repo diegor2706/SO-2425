@@ -10,19 +10,18 @@
 #include "Lista.h"
 #include <ctype.h>
 #include <stdlib.h>
-
-void historial (char cadena[], tList L, bool terminado);
+void historial (char cadena[], tList L, bool terminado); // La variable FromHistory indica si viene de una llamada al historial, para no causar un bucle infinito.
 
 
 int esNumero(char cadena[]) {
-    // Recorrer cada carácter de la cadena
+
     for (int i = 0; i < strlen(cadena); i++) {
-        // Si algún carácter no es un dígito, devolvemos 0 (falso)
         if (!isdigit(cadena[i])) {
-            return 0; // No es un número
+            return 0;
         }
     }
-    return 1; // Es un número
+
+    return 1;
 }
 
 
@@ -41,6 +40,12 @@ void imprimirPrompt(){
 
 void leerEntrada(char * cadena, tList *L){
     fgets(cadena, 100, stdin);
+
+    size_t len = strlen(cadena);
+    if (len > 0 && cadena[len-1] == '\n') {
+        cadena[len-1] = '\0';
+    }
+
     insertItem(cadena, LNULL, L);
 }
 
@@ -177,6 +182,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
         }
         else if(strcmp("historic", trozos[0]) == 0) {
             historial(trozos[1],L, *terminado);
+
         }
         else{
             printf("Comando no reconocido\n");
@@ -200,7 +206,7 @@ void historial (char cadena[], tList L, bool terminado) {
 
     if (cadena == NULL) { // imprimir el historial entero
         for (i = first(L); i != LNULL; i = next(i,L)){
-            printf("%i -> %s",p,i->elemento.datos);
+            printf("%i -> %s\n",p,i->elemento.datos);
             p++;
         }
     }
@@ -209,10 +215,12 @@ void historial (char cadena[], tList L, bool terminado) {
         for (i = first(L); p != aux ; i = next(i,L)){
             p++;
         }
-        procesarEntrada( i->elemento.datos, trozos,&terminado, L);
+        printf("Ejecutando hist (%d): %s\n", aux, i->elemento.datos);
+        procesarEntrada(i->elemento.datos, trozos, &terminado, L);
     }
     else if (strcmp("-N", cadena) == 0){ ;// repetir los últimos N comandos
-       /* aux = atoi(cadena);
+    printf("Modificar\n");
+    /*aux = atoi(cadena);
         for (i = first(L); p != aux ; i = next(i,L)){
             printf("%i -> %s",p,i->elemento.datos);
             p++;
@@ -229,7 +237,6 @@ int main() {
     char *trozos[10];
     tList L;
     createEmptyList(&L);
-
 
     while (!terminado){
         imprimirPrompt();
