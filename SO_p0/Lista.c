@@ -104,3 +104,7 @@ void deleteAtPosition(tPosL p, tList *L) {
 
     free(p);
 }
+
+tPosL previous(tPosL p, tList L) {
+    return --p;
+}

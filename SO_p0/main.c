@@ -1,5 +1,5 @@
 /* Tomás Cotelo Álvarez -> tomas.cotelo */
-/* Diego Román Pose */
+/* Diego Román Pose -> diego.roman */
 /* Grupo 3.2 */
 /* practica 0 */
 
@@ -10,7 +10,12 @@
 #include "Lista.h"
 #include <ctype.h>
 #include <stdlib.h>
-void historial (char cadena[], tList L, bool terminado); // La variable FromHistory indica si viene de una llamada al historial, para no causar un bucle infinito.
+#include <unistd.h> // para el pid y el ppid
+#include <sys/utsname.h> // para el infosys
+
+#define MAX 150
+
+void historial (char cadena[], tList L, bool terminado);
 
 
 int esNumero(char cadena[]) {
@@ -24,9 +29,8 @@ int esNumero(char cadena[]) {
     return 1;
 }
 
-
-int TrocearCadena(char * cadena, char * trozos[])
-{ int i=1;
+int TrocearCadena(char * cadena, char * trozos[]) {
+    int i=1;
     if ((trozos[0]=strtok(cadena," \n\t"))==NULL)
         return 0;
     while ((trozos[i]=strtok(NULL," \n\t"))!=NULL)
@@ -45,7 +49,6 @@ void leerEntrada(char * cadena, tList *L){
     if (len > 0 && cadena[len-1] == '\n') {
         cadena[len-1] = '\0';
     }
-
     insertItem(cadena, LNULL, L);
 }
 
@@ -94,6 +97,39 @@ void date (char cadena[]){
 
 }
 
+void infosys() {
+    struct utsname sys_info;
+
+    if (uname(&sys_info) == 0) {
+        printf("Nombre del sistema operativo: %s\n", sys_info.sysname);
+        printf("Nombre de la máquina (hostname): %s\n", sys_info.nodename);
+        printf("Versión del sistema operativo: %s\n", sys_info.version);
+        printf("Revisión del sistema operativo: %s\n", sys_info.release);
+        printf("Arquitectura de hardware: %s\n", sys_info.machine);
+    } else {
+        perror("Error obteniendo información del sistema");
+    }
+}
+
+void cd (char cadena[]){
+
+    char Actual_Directory[MAX];
+    if (cadena == NULL ) {
+        getcwd(Actual_Directory,sizeof (Actual_Directory));
+        printf("%s",Actual_Directory);
+    }
+    else if (strcmp("-l", cadena) == 0){
+        printf("login 1: tomas.cotelo \nlogin 2: diego.roman\n");
+    }
+    else if (strcmp("-n", cadena) == 0){
+        printf("name 1: Tomás Cotelo Álvarez \nname 2: Diego Román Pose \n");
+    }else{
+        printf("Comando 'authors %s' no reconocido\n", cadena);
+    }
+
+
+}
+
 void help(char cadena[]){
     if (cadena == NULL) {
         printf("authors / pid / ppid / cd / date / historic / open / close / dup / infosys / quit / exit / bye\n ");
@@ -104,14 +140,14 @@ void help(char cadena[]){
     else if (strcmp("pid",cadena) == 0) {
         printf("pid: muestra el pid del shell.\n");
     }
-    else if (strcmp("ppid",cadena) == 0){
+    else if (strcmp("ppid",cadena) == 0) {
         printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
     }
     else if (strcmp("cd",cadena) == 0){
         printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
     }
     else if (strcmp("date",cadena) == 0){
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("date: imprime la fecha actual en formato DD/MM/YYYY y la hora actual en formato hh:mm:ss.\n[-d]: muestra solo el día en formato DD/MM/YYYY\n[-t]: muestra solo la fecha en formato hh:mm:ss\n");;
     }
     else if (strcmp("historic",cadena) == 0){
         printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
@@ -133,34 +169,6 @@ void help(char cadena[]){
     }
 }
 
-/*
-void Cmd_open (char * tr[])
-{
-    int i,df, mode=0;
-
-    if (tr[0]==NULL) { no hay parametro
-        ..............ListarFicherosAbiertos...............
-        return;
-    }
-    for (i=1; tr[i]!=NULL; i++)
-        if (!strcmp(tr[i],"cr")) mode|=O_CREAT;
-        else if (!strcmp(tr[i],"ex")) mode|=O_EXCL;
-        else if (!strcmp(tr[i],"ro")) mode|=O_RDONLY;
-        else if (!strcmp(tr[i],"wo")) mode|=O_WRONLY;
-        else if (!strcmp(tr[i],"rw")) mode|=O_RDWR;
-        else if (!strcmp(tr[i],"ap")) mode|=O_APPEND;
-        else if (!strcmp(tr[i],"tr")) mode|=O_TRUNC;
-        else break;
-
-    if ((df=open(tr[0],mode,0777))==-1)
-        perror ("Imposible abrir fichero");
-    else{
-        ...........AnadirAFicherosAbiertos (descriptor...modo...nombre....)....
-        printf ("Anadida entrada a la tabla ficheros abiertos..................",......);
-    }
-*/
-
-
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
     TrocearCadena(cadena, trozos);
 
@@ -177,11 +185,30 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
         else if(strcmp("help", trozos[0]) == 0){
             help(trozos[1]);
         }
-        else if(strcmp("open", trozos[0]) == 0) {
-            /* Cmd_open(trozos[1]); */
+        else if(strcmp("cd", trozos[0]) == 0) {
+            cd (trozos[1]);
         }
         else if(strcmp("historic", trozos[0]) == 0) {
-            historial(trozos[1],L, *terminado);
+            historial(trozos[1], L, *terminado);
+        }
+        else if (strcmp("infosys", trozos[0]) == 0){
+            infosys();
+        }
+        else if (strcmp("pid", trozos[0]) == 0){
+            pid_t pid = getpid();
+            printf("PID del proceso ejecutando el shell: %d\n", pid);
+        }
+        else if (strcmp("ppid", trozos[0]) == 0){
+            pid_t ppid = getpid();
+            printf("PPID del proceso ejecutando el shell: %d\n", ppid);
+        }
+        else if (strcmp("open", trozos[0]) == 0){
+            void Cmd_open (char * tr[]);
+        }
+        else if (strcmp("close", trozos[0]) == 0){
+
+        }
+        else if (strcmp("dup", trozos[0]) == 0){
 
         }
         else{
@@ -195,12 +222,12 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
 }
 
 
-
 void historial (char cadena[], tList L, bool terminado) {
 
-    tPosL i; // posición del comando en la lista
+    tPosL i, j; // posición del comando en la lista
     int p = 0; // posición del comando en el historial
     int aux;
+    char auxi[MAX];
 
     char *trozos[10];
 
@@ -212,19 +239,31 @@ void historial (char cadena[], tList L, bool terminado) {
     }
     else if (esNumero(cadena)){ //  repetir el comando número N
         aux = atoi(cadena);
-        for (i = first(L); p != aux ; i = next(i,L)){
+
+        for (i = first(L); p != aux && i != LNULL; i = next(i,L)){
             p++;
         }
-        printf("Ejecutando hist (%d): %s\n", aux, i->elemento.datos);
-        procesarEntrada(i->elemento.datos, trozos, &terminado, L);
+        if (i ==LNULL){
+            printf("No hay elemento %s en el historial\n", cadena);
+        }
+        else{
+            printf("Ejecutando hist (%d): %s\n", aux, i->elemento.datos);
+
+            strcpy(auxi,i->elemento.datos);
+            procesarEntrada(auxi, trozos, &terminado, L);
+        }
     }
-    else if (strcmp("-N", cadena) == 0){ ;// repetir los últimos N comandos
-    printf("Modificar\n");
-    /*aux = atoi(cadena);
-        for (i = first(L); p != aux ; i = next(i,L)){
-            printf("%i -> %s",p,i->elemento.datos);
+    else if (('-' == cadena[0]) && esNumero(cadena+1) && (cadena[1] != '\0')) { ;// repetir los últimos N comandos
+        aux = atoi(cadena+1);
+
+        for (i = last(L); p != aux; i = i->anterior)  {
             p++;
-            printf("hola\n"); */
+        }
+        for ( j = i->siguiente; j != LNULL; j = next(j, L) ){
+            printf("%i -> %s\n",p+aux, j->elemento.datos );
+            p++;
+        }
+
     }else{
         printf("Comando 'historic %s' no reconocido\n", cadena);
     }
@@ -233,7 +272,7 @@ void historial (char cadena[], tList L, bool terminado) {
 int main() {
 
     bool terminado = false;
-    char cadena[]= "asignatura de sistemas operativos";
+    char cadena[MAX]= "asignatura de sistemas operativos";
     char *trozos[10];
     tList L;
     createEmptyList(&L);
