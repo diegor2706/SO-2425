@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h> // para el pid y el ppid
 #include <sys/utsname.h> // para el infosys
+#include <fcntl.h> // para el open
 
 #define MAX 150
 
@@ -132,39 +133,42 @@ void cd (char cadena[]){
 
 void help(char cadena[]){
     if (cadena == NULL) {
-        printf("authors / pid / ppid / cd / date / historic / open / close / dup / infosys / quit / exit / bye\n ");
+        printf("authors / pid / ppid / cd / date / historic / open / close / dup / infosys / quit / exit / bye\n");
     }
     else if (strcmp("authors",cadena) == 0){
-        printf("authors: muestra el nombre y el login de los autores.\n[-n]: muestra solo el nombre.\n[-l]: muestra el login de los autores.\n");
+        printf("authors: muestra el nombre y el login de los autores.\n[-n]: muestra solo el nombre.\n[-l]: muestra el login.\n");
     }
     else if (strcmp("pid",cadena) == 0) {
-        printf("pid: muestra el pid del shell.\n");
+        printf("pid: muestra el PID (Process ID) del proceso que ejecuta el shell.\n");
     }
     else if (strcmp("ppid",cadena) == 0) {
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("ppid: muestra el PPID (Parent Process ID) del proceso padre que está ejecutando el shell.\n");
     }
     else if (strcmp("cd",cadena) == 0){
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("cd [dir]: cambia la ruta actual a la ruta indicada. si no se indica ninguna ruta, se muestra la ruta actual.\n");
     }
     else if (strcmp("date",cadena) == 0){
         printf("date: imprime la fecha actual en formato DD/MM/YYYY y la hora actual en formato hh:mm:ss.\n[-d]: muestra solo el día en formato DD/MM/YYYY\n[-t]: muestra solo la fecha en formato hh:mm:ss\n");;
     }
     else if (strcmp("historic",cadena) == 0){
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("historic: muestra el historial de los comandos ejecutados en el shell.\n[]: muestra el historial completo.\n[N]: repite el comando N del historial.\n[-N]: muestra los últimos N comandos.\n");
     }
     else if (strcmp("open",cadena) == 0){
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("\n");
     }
     else if (strcmp("close",cadena) == 0){
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("\n");
     }
     else if (strcmp("dup",cadena) == 0){
-        printf("Prints the names and logins of the program authors. authors -l prints only the logins and authors -n prints only the names\n");
+        printf("\n");
+    }
+    else if (strcmp("help",cadena) == 0){
+        printf("Muestra información sobre los comandos.\n[cmd]: muestra información sobre el comando cmd indicado.\n");
     }
     else if (strcmp("infosys",cadena) == 0){
-        printf("Imprime información sobre la máquina que ejecuta el Shell\n");
+        printf("Imprime información sobre la máquina que ejecuta el shell\n");
     }
-    else if  ((strcmp("quit", cadena) == 0)|| (strcmp("exit", cadena) == 0) || (strcmp("bye", cadena) == 0) ){
+    else if  ((strcmp("quit", cadena) == 0)|| (strcmp("exit", cadena) == 0) || (strcmp("bye", cadena) == 0)){
         printf("Finaliza la ejecución del shell\n");
     }
 }
