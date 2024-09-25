@@ -7,14 +7,14 @@
 #include <string.h>
 #include <stdbool.h>
 #include <time.h>
-#include "Lista.h"
+#include "Lista.c"
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h> // para el pid y el ppid
 #include <sys/utsname.h> // para el infosys
 #include <fcntl.h> // para el open
 
-#define MAX 150
+#define MAX 1000
 
 void historial (char cadena[], tList L, bool terminado);
 
@@ -69,10 +69,10 @@ void authors (char cadena[]){
     }else{
         printf("Comando 'authors %s' no reconocido\n", cadena);
     }
-
 }
 
-void date (char cadena[]){
+void date (char cadena[]) {
+
     time_t tiempo_actual;
     struct tm *tiempo_local;
     char buffer[80];
@@ -95,7 +95,6 @@ void date (char cadena[]){
     }else{
         printf("Comando 'date %s' no reconocido\n", cadena);
     }
-
 }
 
 void infosys() {
@@ -108,27 +107,31 @@ void infosys() {
         printf("Revisión del sistema operativo: %s\n", sys_info.release);
         printf("Arquitectura de hardware: %s\n", sys_info.machine);
     } else {
-        perror("Error obteniendo información del sistema");
+        perror("Error obteniendo información del sistema\n");
     }
 }
 
 void cd (char cadena[]){
 
+    char New_Directory[MAX];
     char Actual_Directory[MAX];
+    char dest[MAX] = "/";
+
     if (cadena == NULL ) {
         getcwd(Actual_Directory,sizeof (Actual_Directory));
-        printf("%s",Actual_Directory);
+        printf("%s\n",Actual_Directory);
     }
-    else if (strcmp("-l", cadena) == 0){
-        printf("login 1: tomas.cotelo \nlogin 2: diego.roman\n");
+    else if (strcmp(cadena, "..") == 0){
+        chdir("..");
     }
-    else if (strcmp("-n", cadena) == 0){
-        printf("name 1: Tomás Cotelo Álvarez \nname 2: Diego Román Pose \n");
-    }else{
-        printf("Comando 'authors %s' no reconocido\n", cadena);
+    else {
+        getcwd(New_Directory,sizeof (New_Directory));
+        strcat(dest, cadena); //añadir automaticamente '/' para cambiar al nuevo directorio
+        strcat(New_Directory,dest);
+        if (chdir(New_Directory) != 0){
+            printf("No ejecutado: No such file or directory\n");
+        }
     }
-
-
 }
 
 void help(char cadena[]){
@@ -148,7 +151,7 @@ void help(char cadena[]){
         printf("cd [dir]: cambia la ruta actual a la ruta indicada. si no se indica ninguna ruta, se muestra la ruta actual.\n");
     }
     else if (strcmp("date",cadena) == 0){
-        printf("date: imprime la fecha actual en formato DD/MM/YYYY y la hora actual en formato hh:mm:ss.\n[-d]: muestra solo el día en formato DD/MM/YYYY\n[-t]: muestra solo la fecha en formato hh:mm:ss\n");;
+        printf("date: imprime la fecha actual en formato DD/MM/YYYY y la hora actual en formato hh:mm:ss.\n[-d]: muestra solo el día en formato DD/MM/YYYY\n[-t]: muestra solo la fecha en formato hh:mm:ss\n");
     }
     else if (strcmp("historic",cadena) == 0){
         printf("historic: muestra el historial de los comandos ejecutados en el shell.\n[]: muestra el historial completo.\n[N]: repite el comando N del historial.\n[-N]: muestra los últimos N comandos.\n");
@@ -207,7 +210,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L){
             printf("PPID del proceso ejecutando el shell: %d\n", ppid);
         }
         else if (strcmp("open", trozos[0]) == 0){
-            void Cmd_open (char * tr[]);
+
         }
         else if (strcmp("close", trozos[0]) == 0){
 
