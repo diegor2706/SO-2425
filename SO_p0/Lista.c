@@ -53,21 +53,6 @@ bool insertItem(tItemL d, tPosL p, tList *L) {
     }
 }
 
-void updateItem(tItemL d, tPosL p, tList *L){
-    strcpy(p->elemento.datos,d);
-}
-
-tPosL findItem(tItemL d, tList L){
-    tPosL p;
-
-    for(p = L; (p != LNULL) && strcpy(p->elemento.datos,d); p = p->siguiente);
-    return p;
-}
-
-element getItem(tPosL p, tList L){
-    return (p->elemento);
-}
-
 tPosL first(tList L){
     return L;
 }
@@ -103,8 +88,4 @@ void deleteAtPosition(tPosL p, tList *L) {
     }
 
     free(p);
-}
-
-tPosL previous(tPosL p, tList L) {
-    return --p;
 }
