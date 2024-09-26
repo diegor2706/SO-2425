@@ -1,3 +1,5 @@
+// para el historial
+
 #ifndef SO_P0_LISTA_H
 #define SO_P0_LISTA_H
 #include <stdbool.h>

@@ -1,3 +1,5 @@
+// para el historial
+
 #include "Lista.h"
 #include <stdlib.h>
 #include <string.h>
@@ -68,24 +70,3 @@ tPosL next(tPosL p, tList L){
     return p->siguiente;
 }
 
-void deleteAtPosition(tPosL p, tList *L) {
-    tPosL q;
-
-    if(p == *L) {
-        *L = (*L)->siguiente;
-
-        if(!isEmptyList(*L)) {
-            (*L)->siguiente = LNULL;
-        }
-
-    } else {
-        q = p->siguiente;
-        q->siguiente = p->siguiente;
-
-        if(p->siguiente != LNULL) {
-            p->siguiente->anterior = p->anterior;
-        }
-    }
-
-    free(p);
-}
