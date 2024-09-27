@@ -157,22 +157,32 @@ void help(char cadena[]){
         printf("historic: muestra el historial de los comandos ejecutados en el shell.\n[]: muestra el historial completo.\n[N]: repite el comando N del historial.\n[-N]: muestra los últimos N comandos.\n");
     }
     else if (strcmp("open",cadena) == 0){
-        printf("\n");
+        printf("open: abre un archivo y lo añade (juntocon el descriptor de archivo y el modo de apertura) a la lista de archivos abiertos de la shell.\n\n");
+        
+        printf("[cr] para O_CREAT (crear archivo si no existe)\n");
+        printf("[ap] para O_APPEND (añadir al final del archivo)\n");
+        printf("[ex] para O_EXCL (fallar si el archivo ya existe)\n");
+        printf("[ro] para O_RDONLY (lectura)\n");
+        printf("[rw] para O_RDWR (lectura y escritura)\n");
+        printf("[wo] para O_WRONLY (solo escritura)\n");
+        printf("[tr] para O_TRUNC (truncar el archivo)\n\n");
+
+        printf("si se usa sin argumentos, muestra la línea de comandos abiertos por el shell.\n");
     }
     else if (strcmp("close",cadena) == 0){
-        printf("\n");
+        printf("close [df]: cierra el descriptor de archivo df y elimina el elemento correspondiente de la lista de archivos abiertos.\n");
     }
     else if (strcmp("dup",cadena) == 0){
-        printf("\n");
+        printf("dup [df]: duplica el descriptor de archivo df, creando la entrada correspondiente en la lista de archivos.\n");
     }
     else if (strcmp("help",cadena) == 0){
-        printf("Muestra información sobre los comandos.\n[cmd]: muestra información sobre el comando cmd indicado.\n");
+        printf("help: muestra información sobre los comandos.\n[cmd]: muestra información sobre el comando cmd indicado.\n");
     }
     else if (strcmp("infosys",cadena) == 0){
-        printf("Imprime información sobre la máquina que ejecuta el shell\n");
+        printf("infosys: mprime información sobre la máquina que ejecuta el shell\n");
     }
     else if  ((strcmp("quit", cadena) == 0)|| (strcmp("exit", cadena) == 0) || (strcmp("bye", cadena) == 0)){
-        printf("Finaliza la ejecución del shell\n");
+        printf("quit / exit / bye: finaliza la ejecución del shell\n");
     }
 }
 
