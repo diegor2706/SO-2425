@@ -157,7 +157,7 @@ void help(char cadena[]){
         printf("historic: muestra el historial de los comandos ejecutados en el shell.\n[]: muestra el historial completo.\n[N]: repite el comando N del historial.\n[-N]: muestra los últimos N comandos.\n");
     }
     else if (strcmp("open",cadena) == 0){
-        printf("open: abre un archivo y lo añade (juntocon el descriptor de archivo y el modo de apertura) a la lista de archivos abiertos de la shell.\n\n");
+        printf("open: abre un archivo y lo añade (junto con el descriptor de archivo y el modo de apertura) a la lista de archivos abiertos de la shell.\n\n");
         
         printf("[cr] para O_CREAT (crear archivo si no existe)\n");
         printf("[ap] para O_APPEND (añadir al final del archivo)\n");
