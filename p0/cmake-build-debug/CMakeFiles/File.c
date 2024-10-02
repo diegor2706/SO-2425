@@ -10,48 +10,52 @@ bool isEmptyFileList(tListF L){
     return (L == FNULL);
 }
 bool createFileNode(tPosF *p){
-    *p = malloc(sizeof(struct FNode));
+    *p = malloc(50* sizeof(struct FNode));
     return *p != FNULL;
 }
-
-bool insertFileItem(Descriptor s, tItemF n,tItemF m, tPosF p, tListF *L) {
-    /* q -> elemento que se va a insertar
-     * r -> elemento previo a q */
+bool insertFileItem(Descriptor j,  tItemF m,tItemF n, tPosF p, tListF *L) {
     tPosF q, r;
 
-    if(!createFileNode(&q)) {
+    if (!createFileNode(&q)) {
         return false;
     } else {
+        q->elemento.descriptor = j;
+        // Usamos strncpy para evitar desbordamiento
+        strncpy(q->elemento.nombre, n, sizeof(q->elemento.nombre) - 1);
+        q->elemento.nombre[sizeof(q->elemento.nombre) - 1] = '\0'; // Aseguramos el terminador nulo
 
-        q->elemento.descriptor = s;
-        strcpy(q->elemento.nombre, n);
-        strcpy(q->elemento.modo, m);
+        strncpy(q->elemento.modo, m, sizeof(q->elemento.modo) - 1);
+        q->elemento.modo[sizeof(q->elemento.modo) - 1] = '\0'; // Aseguramos el terminador nulo
+
         q->siguiente = LNULL;
         q->anterior = LNULL;
-        if(isEmptyFileList(*L)) {
+
+        if (isEmptyFileList(*L)) {
             *L = q;
-        } else if(p == LNULL) {
-            for(r = *L; r->siguiente != FNULL; r = r->siguiente);
+        } else if (p == LNULL) {
+            for (r = *L; r->siguiente != FNULL; r = r->siguiente);
             r->siguiente = q;
             q->anterior = r;
-
-        } else if(p == *L) {
+        } else if (p == *L) {
             q->siguiente = p;
             p->anterior = q;
             *L = q;
-
         } else {
             q->elemento.descriptor = p->elemento.descriptor;
-            strcpy(q->elemento.nombre, p->elemento.nombre);
-            strcpy(q->elemento.modo, p->elemento.modo);
+            strncpy(q->elemento.nombre, p->elemento.nombre, sizeof(q->elemento.nombre) - 1);
+            q->elemento.nombre[sizeof(q->elemento.nombre) - 1] = '\0';
 
-            p->elemento.descriptor = s;
-            strcpy(p->elemento.nombre , n);
-            strcpy(p->elemento.modo, m);
+            strncpy(q->elemento.modo, p->elemento.modo, sizeof(q->elemento.modo) - 1);
+            q->elemento.modo[sizeof(q->elemento.modo) - 1] = '\0';
 
+            p->elemento.descriptor = j;
+            strncpy(p->elemento.nombre, n, sizeof(p->elemento.nombre) - 1);
+            p->elemento.nombre[sizeof(p->elemento.nombre) - 1] = '\0';
 
+            strncpy(p->elemento.modo, m, sizeof(p->elemento.modo) - 1);
+            p->elemento.modo[sizeof(p->elemento.modo) - 1] = '\0';
 
-            if(p->siguiente != LNULL) {
+            if (p->siguiente != LNULL) {
                 p->siguiente->siguiente = q;
             }
             q->siguiente = p->siguiente;
@@ -99,4 +103,3 @@ void deleteFile(tPosF p, tListF *L) {
 
     free(p);
 }
-

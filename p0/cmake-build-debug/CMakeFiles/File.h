@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 typedef int Descriptor;
-typedef char tItemF[30];
+typedef char tItemF[100];
 
 typedef struct elementF{
     Descriptor descriptor;
@@ -27,7 +27,7 @@ typedef tPosF tListF;
 void createEmptyFileList(tListF *L);
 bool isEmptyFileList(tListF L);
 bool createFileNode(tPosF *p);
-bool insertFileItem(Descriptor j,tItemF n, tItemF m, tPosF p, tListF *L);
+bool insertFileItem(Descriptor j, tItemF m,tItemF n, tPosF p, tListF *L);
 tPosF firstFile(tListF L);
 tPosF lastFile(tListF L);
 tPosF nextFile(tPosF p, tListF L);

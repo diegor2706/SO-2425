@@ -14,26 +14,20 @@
 #include <unistd.h> // para el pid y el ppid
 #include <sys/utsname.h> // para el infosys
 #include <fcntl.h> // para el open
-
-
 #define MAX 1000
 
-void pruebaLista (int descriptor, char nombre[], char modo[], tListF *L){
-    insertFileItem(descriptor, nombre,modo, *L, L);
+void prueba (tListF *F){
+    tItemF n = "MODO";
+    tItemF m = "WISKO ";
 
-    tPosF i;
-    for (i = firstFile(*L); i != FNULL; i = nextFile(i,*L)){
-        printf("%i -> nombre : %s   modo : %s\n",i->elemento.descriptor,i->elemento.nombre, i->elemento.modo);
-    }
-
+    insertFileItem(1, m, n, FNULL, F);
 }
-
-
 
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
+void Cmd_open (char * tr[], tListF F);
 
-int esNumero(char cadena[]) {
+int esNumero(char cadena[]) { // función aux
 
     for (int i = 0; i < strlen(cadena); i++) {
         if (!isdigit(cadena[i])) {
@@ -199,33 +193,38 @@ void help(char cadena[]){
         printf("quit / exit / bye: finaliza la ejecución del shell\n");
     }
 }
-/*
-void Cmd_open (char * tr[]) {
-    int i, df, mode = 0;
 
-    if (tr[0] == NULL) { // no hay parametro
-        ..............ListarFicherosAbiertos...............
-        return;
-    }
-    for (i = 1; tr[i] != NULL; i++)
-        if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
-        else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
-        else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
-        else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
-        else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
-        else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
-        else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
-        else break;
+void inicicializarFileLIst(tListF *F){
+    insertFileItem(0,"estandar O_RDWR", "entrada", FNULL, F);
+    insertFileItem(1,"estandar O_RDWR", "salida", FNULL, F);
+    insertFileItem(2,"estandar O_RDWR", "error", FNULL, F);
+}
 
-    if ((df = open(tr[0], mode, 0777)) == -1)
-        perror("Imposible abrir fichero");
-    else {
-        ...........AnadirAFicherosAbiertos(descriptor...
-        modo...nombre....)....
-        printf("Anadida entrada a la tabla ficheros abiertos..................", ......);
+void ListarFicherosAbiertos(tListF F){
+     tPosF i;
+
+     for (i = firstFile(F); i != FNULL; i = nextFile(i, F)){
+         printf("descriptor: %i -> %s %s\n", i->elemento.descriptor, i->elemento.nombre, i->elemento.modo);
+     }
+
+}
+
+void AnadirAFicherosAbiertos(tListF *F, int df, char *nombre, char *modo) {
+   // tPosF p;
+    tItemL fileName, fileMode;
+
+    // Copiar el nombre del archivo y el modo de apertura
+    strcpy(fileName, nombre);
+    strcpy(fileMode, modo);
+
+    // Insertar el nuevo archivo en la lista de archivos abiertos
+    if (insertFileItem(df, fileMode, fileName, NULL, F)) {
+        printf("Archivo %s con descriptor %d y modo %s añadido a la lista de ficheros abiertos\n", nombre, df, modo);
+    } else {
+        printf("Error al añadir el archivo a la lista\n");
     }
 }
-*/
+
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
 
@@ -260,7 +259,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             printf("PPID del proceso ejecutando el shell: %d\n", ppid);
         }
         else if (strcmp("open", trozos[0]) == 0){
-            //Cmd_open();
+            Cmd_open(trozos+1, *F);
         }
         else if (strcmp("close", trozos[0]) == 0){
 
@@ -278,6 +277,31 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
     }
 }
 
+void Cmd_open (char *tr[], tListF F) {
+    int i, df, mode = 0;
+
+    if (tr[0] == NULL) { // no hay parametro
+        ListarFicherosAbiertos(F);  //Imprime el historial de archivos abiertos (open)
+        return;
+    }
+    for (i = 1; tr[i] != NULL; i++)
+        if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
+        else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
+        else if (!strcmp(tr[i], "ro")) mode |= O_RDONLY;
+        else if (!strcmp(tr[i], "wo")) mode |= O_WRONLY;
+        else if (!strcmp(tr[i], "rw")) mode |= O_RDWR;
+        else if (!strcmp(tr[i], "ap")) mode |= O_APPEND;
+        else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
+        else break;
+
+    if ((df = open(tr[0], mode, 0777)) == -1)
+        perror("Imposible abrir fichero\n");
+    else {
+        AnadirAFicherosAbiertos(&F, df, tr[0], tr[i - 1]);
+        ListarFicherosAbiertos(F);
+        printf("Añadida entrada a la tabla ficheros abiertos..................\n");
+    }
+}
 
 void historial (char cadena[], tList L, bool terminado, tListF F) {
 
@@ -285,7 +309,6 @@ void historial (char cadena[], tList L, bool terminado, tListF F) {
     int p = 0; // posición del comando en el historial
     int aux;
     char auxi[MAX];
-
     char *trozos[10];
 
     if (cadena == NULL) { // imprimir el historial entero
@@ -326,6 +349,7 @@ void historial (char cadena[], tList L, bool terminado, tListF F) {
     }
 }
 
+
 int main() {
 
     bool terminado = false;
@@ -335,9 +359,7 @@ int main() {
     tListF F;
     createEmptyList(&L);
     createEmptyFileList(&F);
-
-
-
+    inicicializarFileLIst(&F);
     while (!terminado){
         imprimirPrompt();
         leerEntrada(cadena,&L);

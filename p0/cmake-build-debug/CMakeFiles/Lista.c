@@ -1,5 +1,4 @@
 // para el historial
-
 #include "Lista.h"
 #include <stdlib.h>
 #include <string.h>
@@ -7,11 +6,9 @@
 void createEmptyList(tList *L){
     *L = LNULL;
 }
-
 bool isEmptyList(tList L){
     return (L == LNULL);
 }
-
 bool createNode(tPosL *p){
     *p = malloc(sizeof(struct tNode));
     return *p != LNULL;
