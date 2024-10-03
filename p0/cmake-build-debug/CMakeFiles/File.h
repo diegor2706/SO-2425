@@ -5,33 +5,37 @@
 #define FNULL NULL
 
 #include <stdbool.h>
+
+#define LNULL NULL
+#define  MAX 30
+
+
 typedef int Descriptor;
-typedef char tItemF[100];
 
 typedef struct elementF{
     Descriptor descriptor;
-    tItemF nombre;
-    tItemF modo;
+    char nombre[MAX];
+    char modo[MAX];
 }elementF;
 
-typedef struct FNode *tPosF;
+typedef struct tNodeF *tPosF;
 
-struct FNode{
-    elementF elemento;
+struct tNodeF {
+    elementF data;
     tPosF siguiente;
-    tPosF anterior;
 };
 
 typedef tPosF tListF;
 
-void createEmptyFileList(tListF *L);
-bool isEmptyFileList(tListF L);
+void createEmptyFileList(tListF *F);
+bool isEmptyFileList(tListF F);
 bool createFileNode(tPosF *p);
-bool insertFileItem(Descriptor j, tItemF m,tItemF n, tPosF p, tListF *L);
+bool insertFileItem(Descriptor j, char *m,char *n, tPosF p, tListF *L);
 tPosF firstFile(tListF L);
-tPosF lastFile(tListF L);
+//tPosF lastFile(tListF L);
 tPosF nextFile(tPosF p, tListF L);
-void deleteFile(tPosF p, tListF *L);
+//void deleteFile(tPosF p, tListF *L);
+void deleteAtPosition(tPosL p, tList *L);
 
 
 #endif //SO_P0_FILE_H
