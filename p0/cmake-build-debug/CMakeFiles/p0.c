@@ -345,7 +345,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
 
 void Cmd_open (char *tr[], tListF F) {
     int i;
-    int df = 0;
+    int df ;
     int mode = 0;
     char Mod[MAX];
     strcpy(Mod,"");
