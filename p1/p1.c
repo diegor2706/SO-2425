@@ -181,11 +181,40 @@ void help(char cadena[]){
         printf("help: muestra información sobre los comandos.\n[cmd]: muestra información sobre el comando cmd indicado.\n");
     }
     else if (strcmp("infosys",cadena) == 0){
-        printf("infosys: mprime información sobre la máquina que ejecuta el shell\n");
+        printf("infosys: imprime información sobre la máquina que ejecuta el shell\n");
     }
     else if  ((strcmp("quit", cadena) == 0)|| (strcmp("exit", cadena) == 0) || (strcmp("bye", cadena) == 0)){
         printf("quit / exit / bye: finaliza la ejecución del shell\n");
     }
+    else if (strcmp("makefile",cadena) == 0){
+        printf("makefile: crea un nuevo fichero\n");
+    }
+    else if (strcmp("makedir",cadena) == 0){
+        printf("makedir: crea un nuevo directorio\n");
+    }
+    else if (strcmp("listfile",cadena) == 0){
+        printf("listfile: brinda información sobre ficheros o directorios\n");
+    }
+    else if (strcmp("cwd",cadena) == 0){
+        printf("cwd: imprime el directorio de trabajo actual\n");
+    }
+    else if (strcmp("listdir",cadena) == 0){
+        printf("listdir: enumera el contenido de los directorios\n");
+    }
+    else if (strcmp("reclist",cadena) == 0){
+        printf("reclist: enumera directorios de forma recursiva (subdirectorios después)\n");
+    }
+    else if (strcmp("revlist",cadena) == 0){
+        printf("revlist: enumera directorios de forma recursiva (subdirectorios después)\n");
+    }
+    else if (strcmp("erase",cadena) == 0){
+        printf("erase: elimina archivos y/o directorios vacíos\n");
+    }
+    else if (strcmp("delrec",cadena) == 0){
+        printf("delrec: elimina archivos y/o directorios no vacíos de forma recursiva\n");
+    }
+
+
 }
 
 void inicicializarFileLIst(tListF *F){
@@ -301,6 +330,9 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if(strcmp("help", trozos[0]) == 0){
             help(trozos[1]);
+        }
+        else if(strcmp("command", trozos[0]) == 0){
+            help(trozos[2]);
         }
         else if(strcmp("cd", trozos[0]) == 0) {
             cd (trozos[1]);
