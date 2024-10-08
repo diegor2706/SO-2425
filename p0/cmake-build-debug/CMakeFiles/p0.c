@@ -18,6 +18,7 @@
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
 void Cmd_open (char * tr[], tListF F);
+
 void Cmd_close (char *tr[], tListF F);
 
 int esNumero(char cadena[]) { // función aux
@@ -195,36 +196,99 @@ void inicicializarFileLIst(tListF *F){
 
 void ListarFicherosAbiertos(tListF F){
      tPosF i;
+     int j = 0;
 
      for (i = firstFile(F); i != FNULL; i = nextFile(i, F)){
+         while (j < i->data.descriptor){
+         printf("descriptor: %i -> no usado\n",j);
+         j++;
+         }
          printf("descriptor: %i -> %s %s\n", i->data.descriptor, i->data.nombre, i->data.modo);
+         j ++;
      }
-
+    while (j < 10 ){
+        printf("descriptor: %i -> no usado\n",j);
+        j++;
+    }
 }
 
 void AnadirAFicherosAbiertos(tListF *F, int df, char *nombre, char *modo) {
 
     tItemL fileName, fileMode;
+    tPosF i,q = lastFile(*F);
 
     // Copiar el nombre del archivo y el modo de apertura
     strcpy(fileName, nombre);
     strcpy(fileMode, modo);
 
-    // Insertar el nuevo archivo en la lista de archivos abiertos
-    if (insertFileItem(df, fileMode, fileName, NULL, F)) {
-        printf("Archivo %s con descriptor %d y modo %s añadido a la lista de ficheros abiertos\n", nombre, df, modo);
+    if (q->data.descriptor < df) {
+        if (insertFileItem(df, fileMode, fileName, NULL, F)) {
+            printf("Archivo %s con descriptor %d y modo %s añadido a la lista de ficheros abiertos\n", nombre, df,modo);
+
+        }
     } else {
-        printf("Error al añadir el archivo a la lista\n");
+        for (i = firstFile(*F); i->data.descriptor < df; i = i->siguiente);
+        if (insertFileItem(df, fileMode, fileName, i, F)) {
+            printf("Archivo %s con descriptor %d y modo %s añadido a la lista de ficheros abiertos\n", nombre, df,modo);
+
+        }else{
+            printf("Error al añadir el archivo a la lista\n");
+        }
     }
 }
 
-void EliminarDeFicherosAbiertos(tListF *F, int df, char *nombre, char *modo){
+char* NombreFicheroDescriptor(int df, tListF F) {
+    tPosF i;
 
+    // Recorrer la lista de archivos abiertos
+    for (i = firstFile(F); i != FNULL; i = nextFile(i, F)) {
+        if (i->data.descriptor == df) {
+            return i->data.nombre;  // Devolver el nombre del archivo
+        }
+    }
+    return NULL;  // Si no se encuentra el descriptor
+}
 
+void Cmd_dup (char * tr[], tListF F)
+{
+    int df, duplicado;
+    char aux[MAX],*p;
 
+    if (tr[0]==NULL || (df=atoi(tr[0]))<0) { /*no hay parametro*/
+        ListarFicherosAbiertos(F);                 /*o el descriptor es menor que 0*/
+        return;
+    }
 
+    duplicado=dup(df);
+    p = NombreFicheroDescriptor(df, F);
+    sprintf (aux,"dup %d (%s)",df, p);
+    AnadirAFicherosAbiertos(&F, duplicado, aux, "");
+}
+
+void Cmd_close (char *tr[], tListF F)
+{
+    int df, x;
+    tPosF pos;
+
+    if (tr[0]==NULL || (df=atoi(tr[0]))<0) {
+        ListarFicherosAbiertos(F);
+        return;
+    }
+
+    if (close(df)==-1){
+        perror("Inposible cerrar descriptor");
+    }
+    else{
+        x = atoi(tr[0]);
+        
+        pos = findFileItem( x, F);
+        deleteFileAtPosition(pos, &F);
+    }
 
 }
+
+
+
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
@@ -266,7 +330,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             Cmd_close(trozos+1, *F);
         }
         else if (strcmp("dup", trozos[0]) == 0){
-
+            Cmd_dup(trozos+1,*F);
         }
         else{
             printf("Comando no reconocido\n");
@@ -278,14 +342,15 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
     }
 }
 
+
 void Cmd_open (char *tr[], tListF F) {
     int i;
-    static int df = 3; // Variable estática para controlar el df manualmente
+    int df = 0;
     int mode = 0;
     char Mod[MAX];
     strcpy(Mod,"");
 
-    if (tr[0] == NULL) { // no hay parametro
+    if (tr[0] == NULL) {
         ListarFicherosAbiertos(F);  //Imprime el historial de archivos abiertos (open)
         return;
     }
@@ -301,7 +366,7 @@ void Cmd_open (char *tr[], tListF F) {
         else break;
     }
 
-    if (open(tr[0], mode, 0777) == -1) {
+    if ((df = open(tr[0], mode, 0777)) == -1) {
         perror("Imposible abrir fichero\n");
     } else {
         // Abre el archivo con fopen() basado en el modo
@@ -328,24 +393,15 @@ void Cmd_open (char *tr[], tListF F) {
         printf("Añadida entrada a la tabla ficheros abiertos..................\n");
         AnadirAFicherosAbiertos(&F, df, tr[0], Mod);
 
-        df++;
     }
 }
 
-void Cmd_close(char *tr[], tListF F) {
-    int df;
 
-    if (tr[0]==NULL || (df=atoi(tr[0]))<0) { /*no hay parametro*/
-        ListarFicherosAbiertos(F); /*o el descriptor es menor que 0*/
-        return;
-    }
 
-    if (close(df)==-1)
-        perror("Inposible cerrar descriptor");
-    else
-        EliminarDeFicherosAbiertos();
 
-}
+
+
+
 
 void historial (char cadena[], tList L, bool terminado, tListF F) {
 

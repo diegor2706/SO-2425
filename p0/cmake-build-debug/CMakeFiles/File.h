@@ -32,9 +32,10 @@ bool isEmptyFileList(tListF F);
 bool createFileNode(tPosF *p);
 bool insertFileItem(Descriptor j, char *m,char *n, tPosF p, tListF *L);
 tPosF firstFile(tListF L);
-//tPosF lastFile(tListF L);
+tPosF lastFile(tListF L);
 tPosF nextFile(tPosF p, tListF L);
 //void deleteFile(tPosF p, tListF *L);
+tPosF findFileItem( int x, tListF L);
 void deleteAtPosition(tPosL p, tList *L);
 
 

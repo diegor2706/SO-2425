@@ -62,7 +62,7 @@ bool insertFileItem(Descriptor j, char  *m,char  *n, tPosF p, tListF *L) {
     }
 }
 
-tPosF nextFile(tPosF p, tListF L) {
+tPosF nextFile(tPosF p, tListF F) {
     return p->siguiente;
 }
 
@@ -70,76 +70,43 @@ tPosF firstFile(tListF L) {
     return L;
 }
 
-/*
-void updateItem(tItemF d, tPosF p, tListF *L) {
-    p->d = d;
+tPosF lastFile(tListF F){
+    tPosF i;
+    for (i = F; i->siguiente != FNULL ; i = i->siguiente);
+    return i;
 }
 
+tPosF findFileItem(int x, tListF F) {
+    tPosF i = F;
 
-tPosF findItem(tItemF d, tListF L) {
-    tPosL p;
-
-    for(p = L; (p != LNULL) && (p->d != d); p = p->siguiente);
-    return p;
-}
-
-
-tItemF getIFiletem(tPosF p, tList L) {
-    return p->data;
-}
-
-
-
-tPosL last(tList L) {
-    tPosL p;
-
-    for(p = L; p->next != LNULL; p = p->next);
-    return p;
-}
-
-tPosL previous(tPosL p, tList L) {
-    tPosL q; // q es el elemento previo
-
-    if(p == L) {
-        return LNULL;
+    while (i != FNULL) {
+        if (i->data.descriptor == x) {
+            break;
+        }
+        i = i->siguiente;
     }
-    else {
-        for(q = L; q->next != p; q = q->next);
-        // Mientras el siguiente elemento a q sea distinto al introducido, se seguirá ejecutando el bucle
-        return q;
-    }
+
+    return i;
 }
 
 
+void deleteFileAtPosition(tPosF p, tListF *F) {
 
-void deleteAtPosition(tPosL p, tList *L) {
+    tPosF q;
 
-    tPosL q;
+    if(p == *F) { // Eliminado en la primera posición de la lista
+        *F = (*F)->siguiente;
 
-    if(p == *L) { // Eliminado en la primera posición de la lista
-        *L = (*L)->next;
-
-    } else if(p->next == LNULL) { // Eliminado en la última posición
-        for(q = *L; q->next->next != LNULL; q = q->next);
-        q->next = LNULL;
+    } else if(p->siguiente == FNULL) { // Eliminado en la última posición
+        for(q = *F; q->siguiente->siguiente != LNULL; q = q->siguiente);
+        q->siguiente = LNULL;
 
     } else { // Eliminado de un elemento que no se encuentra en los extremos
-        q = p->next;
+        q = p->siguiente;
         p->data = q->data;
-        p->next = q->next;
+        p->siguiente = q->siguiente;
         p = q;
     }
 
     free(p);
 }
-
-void deleteList(tList *L) {
-    tPosL p;
-
-    while(!isEmptyList(*L)) {
-        p = *L;
-        *L = (*L)->next;
-        free(p);
-    }
-}
-*/
