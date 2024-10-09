@@ -12,8 +12,10 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h> // para el pid y el ppid
+#include <limits.h>
 #include <sys/utsname.h> // para el infosys
 #include <fcntl.h> // para el open
+#include <dirent.h> // par el listfile
 
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
@@ -113,26 +115,47 @@ void infosys() {
     }
 }
 
-void cd (char cadena[]){
+void cd (char cadena[]) {
 
     char New_Directory[MAX];
-    char Actual_Directory[MAX];
+    char cwd[PATH_MAX];  // Array para almacenar la ruta
     char dest[MAX] = "/";
 
-    if (cadena == NULL ) {
-        getcwd(Actual_Directory,sizeof (Actual_Directory));
-        printf("%s\n",Actual_Directory);
+    // Obtener el directorio de trabajo actual y verificar si se obtiene correctamente
+    if (cadena == FNULL){
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            printf("Directorio de trabajo actual: %s\n", cwd);
+        }
     }
-    else if (strcmp(cadena, "..") == 0){
+
+    else if (strcmp(cadena, "..") == 0) {
         chdir("..");
     }
+
     else {
-        getcwd(New_Directory,sizeof (New_Directory));
-        strcat(dest, cadena); //añadir automaticamente '/' para cambiar al nuevo directorio
-        strcat(New_Directory,dest);
-        if (chdir(New_Directory) != 0){
-            printf("No ejecutado: No such file or directory\n");
+    getcwd(New_Directory, sizeof(New_Directory));
+    strcat(dest, cadena); //añadir automaticamente '/' para cambiar al nuevo directorio
+    strcat(New_Directory, dest);
+    if (chdir(New_Directory) != 0) {
+        printf("No ejecutado: No such file or directory\n");
         }
+    }
+
+}
+
+void cwd(const char cadena[]) {
+    char cwd[PATH_MAX];  // Array para almacenar la ruta
+
+
+    if ( cadena == FNULL){
+    // Obtener el directorio de trabajo actual y verificar si se obtiene correctamente
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        printf("Directorio de trabajo actual: %s\n", cwd);
+    } else {
+        perror("Error al obtener el directorio de trabajo actual\n");
+    }
+    }else{
+        printf("Comando no reconocido\n");
     }
 }
 
@@ -311,8 +334,49 @@ void Cmd_close (char *tr[], tListF F) {
         pos = findFileItem( x, F);
         deleteFileAtPosition(pos, &F);
     }
-
 }
+
+void listdir(const char *path) {
+    DIR *dir;
+    struct dirent *entry;
+
+    // Abre el directorio
+    if ((dir = opendir(path)) == NULL) {
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+    printf("Contenido del directorio %s:\n", path);
+
+    // Lee el contenido del directorio
+    while ((entry = readdir(dir)) != NULL) {
+        printf("%s\n", entry->d_name);
+    }
+    closedir(dir); // Cierra el directorio
+}
+
+
+void makefile(const char filename[]) {
+    int fd;
+
+    if (filename == FNULL){
+        printf("Error, introduce un nombre para el archivo a continuacion de makefile.\n");
+    }
+    else{
+        fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+
+        if (fd == -1) {
+            perror("Error al crear el archivo");
+            return;
+        }
+
+        printf("Archivo %s creado con éxito.\n", filename);
+
+        close(fd);
+
+    }
+}
+
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
@@ -359,6 +423,34 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if (strcmp("close", trozos[0]) == 0){
             Cmd_close(trozos+1, *F);
+        }
+        else if (strcmp("makefile", trozos[0]) == 0){
+            makefile(trozos[1]);
+
+        }
+        else if (strcmp("makedir", trozos[0]) == 0){
+
+        }
+        else if (strcmp("listfile", trozos[0]) == 0){
+
+        }
+        else if (strcmp("cwd", trozos[0]) == 0){
+            cwd (trozos[1]);
+        }
+        else if (strcmp("listdir", trozos[0]) == 0){
+            listdir(trozos[1] != NULL ? trozos[1] : ".");
+        }
+        else if (strcmp("reclist", trozos[0]) == 0){
+
+        }
+        else if (strcmp("revlist", trozos[0]) == 0){
+
+        }
+        else if (strcmp("erase", trozos[0]) == 0){
+
+        }
+        else if (strcmp("delrec", trozos[0]) == 0){
+
         }
         else if (strcmp("dup", trozos[0]) == 0){
             Cmd_dup(trozos+1,*F);
