@@ -177,13 +177,13 @@ void help(char cadena[]){
     else if (strcmp("dup",cadena) == 0){
         printf("dup [df]: duplica el descriptor de archivo df, creando la entrada correspondiente en la lista de archivos.\n");
     }
-    else if (strcmp("help",cadena) == 0){
-        printf("help: muestra información sobre los comandos.\n[cmd]: muestra información sobre el comando cmd indicado.\n");
+    else if ((strcmp("help",cadena) == 0) || (strcmp("command", cadena) == 0)) {
+        printf("help / command -?: muestra información sobre los comandos.\n[cmd]: muestra información sobre el comando cmd indicado.\n");
     }
     else if (strcmp("infosys",cadena) == 0){
         printf("infosys: imprime información sobre la máquina que ejecuta el shell\n");
     }
-    else if  ((strcmp("quit", cadena) == 0)|| (strcmp("exit", cadena) == 0) || (strcmp("bye", cadena) == 0)){
+    else if  ((strcmp("quit", cadena) == 0) || (strcmp("exit", cadena) == 0) || (strcmp("bye", cadena) == 0)){
         printf("quit / exit / bye: finaliza la ejecución del shell\n");
     }
     else if (strcmp("makefile",cadena) == 0){
@@ -213,7 +213,6 @@ void help(char cadena[]){
     else if (strcmp("delrec",cadena) == 0){
         printf("delrec: elimina archivos y/o directorios no vacíos de forma recursiva\n");
     }
-
 
 }
 
@@ -331,8 +330,12 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         else if(strcmp("help", trozos[0]) == 0){
             help(trozos[1]);
         }
-        else if(strcmp("command", trozos[0]) == 0){
-            help(trozos[2]);
+        else if (strcmp("command", trozos[0]) == 0) {
+            if (trozos[1] != NULL && trozos[1][0] == '-') {
+                help(trozos[1] + 1);  // Salta el guión para enviar el comando sin el prefijo "-"
+            } else {
+                printf("Uso: command -comando\n");
+            }
         }
         else if(strcmp("cd", trozos[0]) == 0) {
             cd (trozos[1]);
