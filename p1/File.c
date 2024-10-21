@@ -110,3 +110,13 @@ void deleteFileAtPosition(tPosF p, tListF *F) {
 
     free(p);
 }
+
+void deleteFileList(tListF *F) {
+    tPosF p;
+
+    while(!isEmptyFileList(*F)) {
+        p = *F;
+        *F = (*F)->siguiente;
+        free(p);
+    }
+}
