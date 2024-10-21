@@ -45,6 +45,17 @@ int TrocearCadena(char * cadena, char * trozos[]) {
     return i;
 }
 
+
+// funcion auxiliar para la impresion de LISTFILE
+int Trocear_Direccion(char * cadena, char * trozos[]) {
+    int i=1;
+    if ((trozos[0]=strtok(cadena,"/"))==NULL)
+        return 0;
+    while ((trozos[i]=strtok(NULL,"/"))!=NULL)
+        i++;
+    return i;
+}
+
 void imprimirPrompt(){
     printf("$");
 }
@@ -340,9 +351,44 @@ void Cmd_close (char *tr[], tListF F) {
     }
 }
 
+//listfile gives information on files or directories
+void listfile(char *filename){
+    struct stat fileStat;
+    int i;
+    char *trozos[15]; // guardar la segunda parte del directorio: si es p1/Lista, guardamos Lista
+
+    if (filename == NULL) {
+        cd(NULL);
+        return;
+    }
+
+    if (stat(filename, &fileStat) == -1){
+        perror("Error la obtener la información del archivo\n");
+        return;
+    }
+
+    i = Trocear_Direccion(filename,trozos);
+
+    if (i !=0){
+        printf("%8ld   %s\n", fileStat.st_size, trozos[i-1]);
+    }
+    else {
+        printf("%8ld   %s\n", fileStat.st_size, filename);
+    }
+}
+
+//listdir lists directories contents
 void listdir(const char *path) {
+
     DIR *dir;
     struct dirent *entry;
+    char fullpath[1024]; // Buffer para almacenar la ruta completa
+
+
+    if (path == NULL) {
+        cd(NULL);
+        return;
+    }
 
     // Abre el directorio
     if ((dir = opendir(path)) == NULL) {
@@ -350,15 +396,24 @@ void listdir(const char *path) {
         return;
     }
 
-    printf("Contenido del directorio %s:\n", path);
+    printf("************%s\n", path);
 
     // Lee el contenido del directorio
     while ((entry = readdir(dir)) != NULL) {
-        printf("%s\n", entry->d_name);
-    }
+
+        // Ignorar los directorios "." y ".."
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        // Construir la ruta completa al archivo
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
+
+        // Llamar a listfile con la ruta completa
+        listfile(fullpath);
+        }
+
     closedir(dir); // Cierra el directorio
 }
-
 
 void makefile(const char filename[]) {
     int fd;
@@ -375,7 +430,6 @@ void makefile(const char filename[]) {
         }
 
         printf("Archivo %s creado con éxito.\n", filename);
-
         close(fd);
 
     }
@@ -389,25 +443,29 @@ void makedir(const char *dirname){
 
 }
 
-void listfile(const char *filename){
-    struct stat fileStat;
-    if (stat(filename, &fileStat) == -1){
-        perror("Error la obtener la información del archivo");
+void reclist(const char *path) {
+
+    DIR *dir; // puntero que usaremos para abrir un directorio
+    struct dirent *entry; // almacenamos la información de cada archivo o subdirectorio
+    if ((dir = opendir(path)) == NULL) { // abrimos el directorio en una ruta específica
+        perror("Error al abrir el directorio");
         return;
     }
-    printf("Información sobre %s:\n", filename);
-    //printf("Tamaño: %ld bytes\n", fileStat.st_size);
-    //printf("Permisos: %o\n", fileStat.st_mode);
-    //printf("Última modificación: %s", ctime(&fileStat.st_mtime));
+    while ((entry = readdir(dir)) != NULL) { // lee la siguiente entrada hasta que no haya más entradas
+        if (entry->d_type == DT_DIR) { // verifica si la entrada actual es un subdirectorio
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+                char newpath[PATH_MAX];
+                snprintf(newpath, sizeof(newpath), "%s/%s", path, entry->d_name);
+                reclist(newpath); // listamos el contenido encontrado
+            }
+        } else {
+            printf("%s/%s\n", path, entry->d_name);
+        }
+    }
+    closedir(dir);
 }
 
-void reclist (const char *path){
-
-
-
-
-
-
+void revlist(){
 
 }
 
@@ -470,12 +528,13 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             cwd (trozos[1]);
         }
         else if (strcmp("listdir", trozos[0]) == 0){
-            listdir(trozos[1] != NULL ? trozos[1] : ".");
+            listdir(trozos[1]);
         }
         else if (strcmp("reclist", trozos[0]) == 0){
             reclist(trozos[1] != NULL ? trozos[1] : ".");
         }
         else if (strcmp("revlist", trozos[0]) == 0){
+            revlist(trozos[1] != NULL ? trozos[1] : ".");
 
         }
         else if (strcmp("erase", trozos[0]) == 0){
