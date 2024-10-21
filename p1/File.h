@@ -35,6 +35,7 @@ tPosF lastFile(tListF L);
 tPosF nextFile(tPosF p, tListF L);
 tPosF findFileItem(int x, tListF L);
 void deleteFileAtPosition(tPosF p, tListF *L);
+void deleteFileList(tListF *F);
 
 
 #endif //p1_FILE_H
