@@ -28,6 +28,7 @@ bool insertItem(tItemL d, tPosL p, tList *L);
 tPosL first(tList L);
 tPosL last(tList L);
 tPosL next(tPosL p, tList L);
+void deleteList(tList *L);
 
 
 #endif //p1_LISTA_H
