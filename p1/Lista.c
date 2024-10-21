@@ -67,3 +67,14 @@ tPosL last(tList L){
 tPosL next(tPosL p, tList L){
     return p->siguiente;
 }
+
+
+void deleteList(tList *L) {
+    tPosL p;
+
+    while(!isEmptyList(*L)) {
+        p = *L;
+        *L = (*L)->siguiente;
+        free(p);
+    }
+}
