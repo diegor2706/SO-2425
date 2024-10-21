@@ -16,6 +16,8 @@
 #include <sys/utsname.h> // para el infosys
 #include <fcntl.h> // para el open
 #include <dirent.h> // par el listfile
+#include <sys/stat.h> // necesaria para el mkdir y listdir
+
 
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
@@ -57,8 +59,10 @@ void leerEntrada(char * cadena, tList *L){
     insertItem(cadena, LNULL, L);
 }
 
-void quit(bool *terminado){
+void quit(bool *terminado, tList *L, tListF *F){
     *terminado = true;
+    deleteList(L);
+    deleteFileList(F);
 }
 
 void authors (char cadena[]){
@@ -377,13 +381,42 @@ void makefile(const char filename[]) {
     }
 }
 
+void makedir(const char *dirname){
+    if(mkdir(dirname, 0755) == -1) {
+        perror("Error al crear el directorio");
+    }
+    else printf("Directorio %s creado exitosamente.\n", dirname);
+
+}
+
+void listfile(const char *filename){
+    struct stat fileStat;
+    if (stat(filename, &fileStat) == -1){
+        perror("Error la obtener la información del archivo");
+        return;
+    }
+    printf("Información sobre %s:\n", filename);
+    //printf("Tamaño: %ld bytes\n", fileStat.st_size);
+    //printf("Permisos: %o\n", fileStat.st_mode);
+    //printf("Última modificación: %s", ctime(&fileStat.st_mtime));
+}
+
+void reclist (const char *path){
+
+
+
+
+
+
+
+}
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
 
     if (trozos[0] != NULL){
         if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0) ){
-            quit(terminado);
+            quit(terminado, &L, F);
         }
         else if(strcmp("authors", trozos[0]) == 0){
             authors(trozos[1]);
@@ -426,13 +459,12 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if (strcmp("makefile", trozos[0]) == 0){
             makefile(trozos[1]);
-
         }
         else if (strcmp("makedir", trozos[0]) == 0){
-
+            makedir(trozos[1]);
         }
         else if (strcmp("listfile", trozos[0]) == 0){
-
+            listfile(trozos[1]);
         }
         else if (strcmp("cwd", trozos[0]) == 0){
             cwd (trozos[1]);
@@ -441,7 +473,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             listdir(trozos[1] != NULL ? trozos[1] : ".");
         }
         else if (strcmp("reclist", trozos[0]) == 0){
-
+            reclist(trozos[1] != NULL ? trozos[1] : ".");
         }
         else if (strcmp("revlist", trozos[0]) == 0){
 
@@ -522,7 +554,7 @@ void Cmd_open (char *tr[], tListF F) {
 void historial (char cadena[], tList L, bool terminado, tListF F) {
 
     tPosL i, j; // posición del comando en la lista
-    int p = 0; // posición del comando en el historial
+    int p = 0;  // posición del comando en el historial
     int aux;
     char auxi[MAX];
     char *trozos[10];
