@@ -18,7 +18,6 @@
 #include <dirent.h> // par el listfile
 #include <sys/stat.h> // necesaria para el mkdir y listdir
 
-
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
 void Cmd_open (char * tr[], tListF F);
@@ -469,6 +468,34 @@ void revlist(){
 
 }
 
+void erase(const char *path) {
+    struct stat path_stat;
+
+    // Obtener información del archivo o directorio
+    if (lstat(path, &path_stat) == -1) {
+        perror("Error al obtener información del archivo o directorio");
+        return;
+    }
+
+    if (S_ISREG(path_stat.st_mode)) {
+        // Si es un archivo regular, usar unlink() para eliminarlo
+        if (unlink(path) == 0) {
+            printf("Archivo %s eliminado con éxito.\n", path);
+        } else {
+            perror("Error al eliminar el archivo");
+        }
+    } else if (S_ISDIR(path_stat.st_mode)) {
+        // Si es un directorio, usar rmdir() para eliminarlo si está vacío
+        if (rmdir(path) == 0) {
+            printf("Directorio %s eliminado con éxito.\n", path);
+        } else {
+            perror("Error al eliminar el directorio (¿puede que no esté vacío?)");
+        }
+    } else {
+        printf("El camino %s no es un archivo regular ni un directorio vacío.\n", path);
+    }
+}
+
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
 
@@ -537,8 +564,12 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             revlist(trozos[1] != NULL ? trozos[1] : ".");
 
         }
-        else if (strcmp("erase", trozos[0]) == 0){
-
+        else if (strcmp("erase", trozos[0]) == 0) {
+            if (trozos[1] != NULL) {
+                erase(trozos[1]);
+            } else {
+                printf("Uso: erase <ruta>\n");
+            }
         }
         else if (strcmp("delrec", trozos[0]) == 0){
 
