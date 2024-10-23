@@ -18,6 +18,8 @@
 #include <dirent.h> // par el listfile
 #include <sys/stat.h> // necesaria para el mkdir y listdir
 #include <sys/types.h>
+#include <pwd.h> // necesaria para el listfile -long
+#include <grp.h> // necesaria para el listfile -long
 
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
@@ -187,10 +189,15 @@ void help(char cadena[]){
         printf("cd [dir]: cambia la ruta actual a la ruta indicada. si no se indica ninguna ruta, se muestra la ruta actual.\n");
     }
     else if (strcmp("date",cadena) == 0){
-        printf("date: imprime la fecha actual en formato DD/MM/YYYY y la hora actual en formato hh:mm:ss.\n[-d]: muestra solo el día en formato DD/MM/YYYY\n[-t]: muestra solo la fecha en formato hh:mm:ss\n");
+        printf("date: imprime la fecha actual en formato DD/MM/YYYY y la hora actual en formato hh:mm:ss.\n");
+        printf("[-d]: muestra solo el día en formato DD/MM/YYYY\n");
+        printf("[-t]: muestra solo la fecha en formato hh:mm:ss\n");
     }
     else if (strcmp("historic",cadena) == 0){
-        printf("historic: muestra el historial de los comandos ejecutados en el shell.\n[]: muestra el historial completo.\n[N]: repite el comando N del historial.\n[-N]: muestra los últimos N comandos.\n");
+        printf("historic: muestra el historial de los comandos ejecutados en el shell.\n");
+        printf("[]: muestra el historial completo.\n");
+        printf("[N]: repite el comando N del historial.\n");
+        printf("[-N]: muestra los últimos N comandos.\n");
     }
     else if (strcmp("open",cadena) == 0){
         printf("open: abre un archivo y lo añade (junto con el descriptor de archivo y el modo de apertura) a la lista de archivos abiertos de la shell.\n\n");
@@ -226,7 +233,7 @@ void help(char cadena[]){
     else if (strcmp("makedir",cadena) == 0){
         printf("makedir [name]: crea un nuevo directorio\n");
     }
-    else if (strcmp("listfile",cadena) == 0){
+    else if ((strcmp("listfile",cadena) == 0) || (strcmp("listfile -long", cadena) == 0) || (strcmp("listfile -link", cadena) == 0) || (strcmp("listfile -acc", cadena) == 0)){
         printf("listfile []: brinda información sobre ficheros o directorios\n");
         printf("[-long]: listado largo. \n");
         printf("[-acc]: acesstime. \n");
@@ -235,7 +242,8 @@ void help(char cadena[]){
     else if (strcmp("cwd",cadena) == 0){
         printf("cwd: imprime el directorio de trabajo actual\n");
     }
-    else if (strcmp("listdir",cadena) == 0){
+    else if ((strcmp("listdir",cadena) == 0) || (strcmp("listdir -long", cadena) == 0) || (strcmp("listdir -hid", cadena) == 0)
+    || (strcmp("listdir -acc", cadena) == 0) || (strcmp("listfile -link", cadena) == 0)) {
         printf("listdir []: enumera el contenido de los directorios\n");
         printf("[-long]: listado largo. \n");
         printf("[-hid]: incluye los ficheros ocultos. \n");
@@ -428,62 +436,67 @@ void prueba(){
 
 
 //listfile gives information on files or directories
-void listfile( char *filename[]){
+void listfile(char *filename[]) {
     struct stat fileStat;
-    int i;
-    char *trozos[15];// guardar la segunda parte del directorio: si es p1/Lista, guardamos Lista
-    int aux = -1;   //Para saber si el file es -long o alguna otra funcion
-    char a;
-
+    char formatted_date[20];
+    int aux = -1;
 
     if (filename[0] == NULL) {
-        cd(NULL);
+        cd (NULL);
         return;
     }
-    if (strcmp("-long", filename[0]) == 0 ){
+
+    if (strcmp("-long", filename[0]) == 0) {
         aux = 0;
-    }
-    else if (strcmp("-acc", filename[0]) == 0){
+    } else if (strcmp("-acc", filename[0]) == 0) {
         aux = 1;
-    }
-    else if (strcmp("-link", filename[0]) == 0 ){
+    } else if (strcmp("-link", filename[0]) == 0) {
         aux = 2;
     }
-    if (filename[1] == NULL && aux != -1){
+    if (filename[1] == NULL && aux != -1) {
         cd(NULL);
         return;
     }
-    if (aux == 1){
-        if (stat(filename[1], &fileStat) == -1){
-            perror("Error la obtener la información del archivo\n");
-            return;
-        }
-        a = LetraTF(fileStat.st_mode);
-        printf("Última modificación: %s", ctime(&fileStat.st_mtime)); ;
-    }
-    else if (aux == -1){
-        if (stat(filename[0], &fileStat) == -1){
-            perror("Error la obtener la información del archivo\n");
-            return;
-    }
 
-        i = Trocear_Direccion(filename[0],trozos);
-
-        if (i !=0){
-            printf("%8ld   %s\n", fileStat.st_size, trozos[i-1]);
-        }
-        else {
-            printf("%8ld   %s\n", fileStat.st_size, filename[0]);
-        }
+    if (stat(filename[aux == -1 ? 0 : 1], &fileStat) == -1) {
+        perror("Error al obtener la información del archivo");
         return;
     }
-    i = Trocear_Direccion(filename[1],trozos);
+    strftime(formatted_date, sizeof(formatted_date), "%Y/%m/%d-%H:%M", localtime(&fileStat.st_mtime));
 
-    if (i !=0){
-        printf("%8ld   %s\n", fileStat.st_size, trozos[i-1]);
+    if (aux == 0) {  // -long
+        struct passwd *pw = getpwuid(fileStat.st_uid);
+        struct group  *gr = getgrgid(fileStat.st_gid);
+        char *permissions = ConvierteModo2(fileStat.st_mode);
+
+        printf("%s 1 (%ld) %s %s %s %8ld %s %s\n",
+               formatted_date,
+               fileStat.st_nlink,
+               pw ? pw->pw_name : "desconocido",
+               gr ? gr->gr_name : "desconocido",
+               permissions,
+               fileStat.st_size,
+               filename[1],
+               filename[1]);
     }
-    else {
-        printf("%8ld   %s\n", fileStat.st_size, filename[1]);
+    else if (aux == 1) {  // -acc
+        printf("%8ld   %s %s\n", fileStat.st_size, ctime(&fileStat.st_atime), filename[1]);
+    }
+    else if (aux == 2) {  // -link
+        if (LetraTF(fileStat.st_mode) == 'l') {
+            char link_path[PATH_MAX];
+            ssize_t len = readlink(filename[1], link_path, sizeof(link_path) - 1);
+            if (len != -1) {
+                link_path[len] = '\0';
+                printf("El enlace simbólico apunta a: %s\n", link_path);
+            } else {
+                perror("Error al leer el enlace simbólico");
+            }
+        } else {
+            printf("%8ld   %s\n", fileStat.st_size, filename[1]);
+        }
+    } else {
+        printf("%8ld   %s\n", fileStat.st_size, filename[0]);
     }
 }
 
