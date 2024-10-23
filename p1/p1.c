@@ -227,13 +227,20 @@ void help(char cadena[]){
         printf("makedir [name]: crea un nuevo directorio\n");
     }
     else if (strcmp("listfile",cadena) == 0){
-        printf("listfile: brinda información sobre ficheros o directorios\n");
+        printf("listfile []: brinda información sobre ficheros o directorios\n");
+        printf("[-long]: listado largo. \n");
+        printf("[-acc]: acesstime. \n");
+        printf("[-link]: si el enlace es simbólico, el path contenido. \n");
     }
     else if (strcmp("cwd",cadena) == 0){
         printf("cwd: imprime el directorio de trabajo actual\n");
     }
     else if (strcmp("listdir",cadena) == 0){
-        printf("listdir: enumera el contenido de los directorios\n");
+        printf("listdir []: enumera el contenido de los directorios\n");
+        printf("[-long]: listado largo. \n");
+        printf("[-hid]: incluye los ficheros ocultos. \n");
+        printf("[-acc]: acesstime. \n");
+        printf("[-link]: si el enlace es simbólico, el path contenido. \n");
     }
     else if (strcmp("reclist",cadena) == 0){
         printf("reclist: enumera directorios de forma recursiva (subdirectorios después)\n");
@@ -375,8 +382,8 @@ void makedir(const char *dirname){
 
 }
 
-char LetraTF (mode_t m) // función auxiliar - help code
-{
+char LetraTF (mode_t m) { // función auxiliar - help code
+
     switch (m&S_IFMT) { /*and bit a bit con los bits de formato,0170000 */
         case S_IFSOCK: return 's'; /*socket */
         case S_IFLNK: return 'l'; /*symbolic link*/
@@ -411,68 +418,104 @@ char * ConvierteModo2 (mode_t m)
     return permisos;
 }
 
+
+void prueba(){
+    struct stat sb;
+    stat("carpeta", &sb);
+    char tipo = LetraTF(sb.st_mode);
+    printf("%c\n", tipo);
+}
+
+
 //listfile gives information on files or directories
-void listfile(char *filename){
+void listfile( char *filename[]){
     struct stat fileStat;
     int i;
-    char *trozos[15]; // guardar la segunda parte del directorio: si es p1/Lista, guardamos Lista
+    char *trozos[15];// guardar la segunda parte del directorio: si es p1/Lista, guardamos Lista
+    int aux = -1;   //Para saber si el file es -long o alguna otra funcion
+    char a;
 
-    if (filename == NULL) {
+
+    if (filename[0] == NULL) {
         cd(NULL);
         return;
     }
-
-    if (stat(filename, &fileStat) == -1){
-        perror("Error la obtener la información del archivo\n");
+    if (strcmp("-long", filename[0]) == 0 ){
+        aux = 0;
+    }
+    else if (strcmp("-acc", filename[0]) == 0){
+        aux = 1;
+    }
+    else if (strcmp("-link", filename[0]) == 0 ){
+        aux = 2;
+    }
+    if (filename[1] == NULL && aux != -1){
+        cd(NULL);
         return;
     }
+    if (aux == 1){
+        if (stat(filename[1], &fileStat) == -1){
+            perror("Error la obtener la información del archivo\n");
+            return;
+        }
+        a = LetraTF(fileStat.st_mode);
+        printf("Última modificación: %s", ctime(&fileStat.st_mtime)); ;
+    }
+    else if (aux == -1){
+        if (stat(filename[0], &fileStat) == -1){
+            perror("Error la obtener la información del archivo\n");
+            return;
+    }
 
-    i = Trocear_Direccion(filename,trozos);
+        i = Trocear_Direccion(filename[0],trozos);
+
+        if (i !=0){
+            printf("%8ld   %s\n", fileStat.st_size, trozos[i-1]);
+        }
+        else {
+            printf("%8ld   %s\n", fileStat.st_size, filename[0]);
+        }
+        return;
+    }
+    i = Trocear_Direccion(filename[1],trozos);
 
     if (i !=0){
         printf("%8ld   %s\n", fileStat.st_size, trozos[i-1]);
     }
     else {
-        printf("%8ld   %s\n", fileStat.st_size, filename);
+        printf("%8ld   %s\n", fileStat.st_size, filename[1]);
     }
 }
 
-/* cosas que hacer mañana en clase
- * - "menu" para saber qué acompaña después de lisdir.
- * - depende de lo que haya hará una cosa u otra
- * - preguntar dudas a la profesora
-*/
-
 //listdir lists directories contents
-void listdir(const char *path) {
+void listdir( char *path[]) {
 
     DIR *dir;
     struct dirent *entry;
     char fullpath[1024];
+    char *envio_file[100];
 
-    if (path == NULL) {
+    if (path == NULL ) {
         cd(NULL);
         return;
     }
-
-    if ((dir = opendir(path)) == NULL) {
+    if ((dir = opendir(path[0])) == NULL) {
         perror("Error al abrir el directorio");
         return;
     }
-
-    printf("************%s\n", path);
+    printf("************%s\n", path[0]);
 
     while ((entry = readdir(dir)) != NULL) {
 
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
         // construir la ruta completa al archivo
-        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path[0], entry->d_name);
 
         // llamar a listfile con la ruta completa
-        listfile(fullpath);
+        strcpy(envio_file[0],fullpath);
+        listfile(envio_file);
     }
-
     closedir(dir); // cierra el directorio
 }
 
@@ -582,20 +625,19 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             makedir(trozos[1]);
         }
         else if (strcmp("listfile", trozos[0]) == 0){
-            listfile(trozos[1]);
+            listfile(trozos+1);
         }
         else if (strcmp("cwd", trozos[0]) == 0){
             cwd (trozos[1]);
         }
         else if (strcmp("listdir", trozos[0]) == 0){
-            listdir(trozos[1]);
+            listdir(trozos+1);
         }
         else if (strcmp("reclist", trozos[0]) == 0){
             reclist(trozos[1] != NULL ? trozos[1] : ".");
         }
         else if (strcmp("revlist", trozos[0]) == 0){
             revlist(trozos[1] != NULL ? trozos[1] : ".");
-
         }
         else if (strcmp("erase", trozos[0]) == 0) {
             if (trozos[1] != NULL) {
@@ -604,8 +646,8 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
                 printf("Uso: erase <ruta>\n");
             }
         }
-        else if (strcmp("delrec", trozos[0]) == 0){
-
+        else if (strcmp("prueba", trozos[0]) == 0){
+                    prueba();
         }
         else if (strcmp("dup", trozos[0]) == 0){
             Cmd_dup(trozos+1,*F);
@@ -614,7 +656,6 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             printf("Comando no reconocido\n");
         }
     }
-
     else {
         printf("Comando no reconocido\n");
     }
@@ -642,7 +683,6 @@ void Cmd_open (char *tr[], tListF F) {
         else if (!strcmp(tr[i], "tr")) mode |= O_TRUNC;
         else break;
     }
-
     if ((df = open(tr[0], mode, 0777)) == -1) {
         perror("Imposible abrir fichero\n");
     } else {
