@@ -38,6 +38,13 @@ int esNumero(char cadena[]) { // función aux
     return 1;
 }
 
+void eliminarEnter(char *str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len-1] == '\n') {
+        str[len-1] = '\0';
+    }
+}
+
 int TrocearCadena(char * cadena, char * trozos[]) {
     int i=1;
     if ((trozos[0]=strtok(cadena," \n\t"))==NULL)
@@ -438,8 +445,9 @@ void prueba(){
 //listfile gives information on files or directories
 void listfile(char *filename[]) {
     struct stat fileStat;
-    char formatted_date[20];
+    char formatted_date[50];
     int aux = -1;
+    char acces_date[50];
 
     if (filename[0] == NULL) {
         cd (NULL);
@@ -469,21 +477,26 @@ void listfile(char *filename[]) {
         struct group  *gr = getgrgid(fileStat.st_gid);
         char *permissions = ConvierteModo2(fileStat.st_mode);
 
-        printf("%s 1 (%ld) %s %s %s %8ld %s %s\n",
+        printf("%s   1 (%ld)    %s    %s %s %8ld %s \n",
                formatted_date,
                fileStat.st_nlink,
                pw ? pw->pw_name : "desconocido",
                gr ? gr->gr_name : "desconocido",
                permissions,
                fileStat.st_size,
-               filename[1],
-               filename[1]);
+               filename[1]
+               );
     }
     else if (aux == 1) {  // -acc
-        printf("%8ld   %s %s\n", fileStat.st_size, ctime(&fileStat.st_atime), filename[1]);
+        strcpy(acces_date,ctime(&fileStat.st_atime));
+        eliminarEnter(acces_date);
+
+        printf("%8ld   %s %s\n", fileStat.st_size, acces_date, filename[1]);
+        return;
     }
     else if (aux == 2) {  // -link
-        if (LetraTF(fileStat.st_mode) == 'l') {
+
+        if ( LetraTF(fileStat.st_mode) == 'l') {
             char link_path[PATH_MAX];
             ssize_t len = readlink(filename[1], link_path, sizeof(link_path) - 1);
             if (len != -1) {
