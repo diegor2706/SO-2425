@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <pwd.h> // necesaria para el listfile -long
 #include <grp.h> // necesaria para el listfile -long
+#include <errno.h> // para el delrec
 
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
@@ -600,6 +601,47 @@ void erase(const char *path) {
     }
 }
 
+void delrec(const char *path) {
+    struct stat path_stat;
+
+    if (lstat(path, &path_stat) == -1) {
+        perror("Error al obtener información del archivo o directorio");
+        return;
+    }
+    if (S_ISREG(path_stat.st_mode) || S_ISLNK(path_stat.st_mode)) {
+        if (unlink(path) != 0) {
+            perror("Error al eliminar el archivo");
+        }
+        return;
+    }
+    if (S_ISDIR(path_stat.st_mode)) {
+        DIR *dir = opendir(path);
+        struct dirent *entry;
+        char subpath[512];
+
+        if (!dir) {
+            perror("Error al abrir el directorio");
+            return;
+        }
+
+        while ((entry = readdir(dir)) != NULL) {
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+            delrec(subpath);
+        }
+
+        closedir(dir);
+
+        if (rmdir(path) != 0) {
+            perror("Error al eliminar el directorio");
+        }
+
+    } else {
+        printf("El camino %s no es un archivo regular ni un directorio.\n", path);
+    }
+}
+
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
 
@@ -676,6 +718,13 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if (strcmp("prueba", trozos[0]) == 0){
             prueba();
+        }
+        else if (strcmp("delrec", trozos[0]) == 0){
+            if (trozos[1] != NULL) {
+                delrec(trozos[1]);
+            } else {
+                printf("Uso: delrec <ruta>\n");
+            }
         }
         else if (strcmp("dup", trozos[0]) == 0){
             Cmd_dup(trozos+1,*F);
