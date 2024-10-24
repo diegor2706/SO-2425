@@ -38,13 +38,6 @@ int esNumero(char cadena[]) { // función aux
     return 1;
 }
 
-void eliminarEnter(char *str) {
-    size_t len = strlen(str);
-    if (len > 0 && str[len-1] == '\n') {
-        str[len-1] = '\0';
-    }
-}
-
 int TrocearCadena(char * cadena, char * trozos[]) {
     int i=1;
     if ((trozos[0]=strtok(cadena," \n\t"))==NULL)
@@ -168,12 +161,12 @@ void cwd(const char cadena[]) {
 
 
     if ( cadena == FNULL){
-    // Obtener el directorio de trabajo actual y verificar si se obtiene correctamente
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        printf("Directorio de trabajo actual: %s\n", cwd);
-    } else {
-        perror("Error al obtener el directorio de trabajo actual\n");
-    }
+        // Obtener el directorio de trabajo actual y verificar si se obtiene correctamente
+        if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            printf("Directorio de trabajo actual: %s\n", cwd);
+        } else {
+            perror("Error al obtener el directorio de trabajo actual\n");
+        }
     }else{
         printf("Comando no reconocido\n");
     }
@@ -182,6 +175,7 @@ void cwd(const char cadena[]) {
 void help(char cadena[]){
     if (cadena == NULL) {
         printf("authors / pid / ppid / cd / date / historic / open / close / dup / infosys / quit / exit / bye\n");
+        printf("makefile / makedir / listfile / cwd / listdir / reclist / revlist / erase / delrec\n");
     }
     else if (strcmp("authors",cadena) == 0){
         printf("authors: muestra el nombre y el login de los autores.\n[-n]: muestra solo el nombre.\n[-l]: muestra el login.\n");
@@ -250,18 +244,28 @@ void help(char cadena[]){
         printf("cwd: imprime el directorio de trabajo actual\n");
     }
     else if ((strcmp("listdir",cadena) == 0) || (strcmp("listdir -long", cadena) == 0) || (strcmp("listdir -hid", cadena) == 0)
-    || (strcmp("listdir -acc", cadena) == 0) || (strcmp("listfile -link", cadena) == 0)) {
+             || (strcmp("listdir -acc", cadena) == 0) || (strcmp("listfile -link", cadena) == 0)) {
         printf("listdir []: enumera el contenido de los directorios\n");
         printf("[-long]: listado largo. \n");
         printf("[-hid]: incluye los ficheros ocultos. \n");
         printf("[-acc]: acesstime. \n");
         printf("[-link]: si el enlace es simbólico, el path contenido. \n");
     }
-    else if (strcmp("reclist",cadena) == 0){
+    else if ((strcmp("reclist",cadena) == 0) || (strcmp("reclist -long", cadena) == 0) || (strcmp("reclist -hid", cadena) == 0)
+             || (strcmp("reclist -acc", cadena) == 0) || (strcmp("reclist -link", cadena) == 0)) {
         printf("reclist: enumera directorios de forma recursiva (subdirectorios después)\n");
+        printf("[-long]: listado largo. \n");
+        printf("[-hid]: incluye los ficheros ocultos. \n");
+        printf("[-acc]: acesstime. \n");
+        printf("[-link]: si el enlace es simbólico, el path contenido. \n");
     }
-    else if (strcmp("revlist",cadena) == 0){
-        printf("revlist: enumera directorios de forma recursiva (subdirectorios después)\n");
+    else if ((strcmp("revlist",cadena) == 0) || (strcmp("revlist -long", cadena) == 0) || (strcmp("revlist -hid", cadena) == 0)
+             || (strcmp("revlist -acc", cadena) == 0) || (strcmp("revlist -link", cadena) == 0)) {
+        printf("revlist: enumera directorios de forma recursiva (subdirectorios antes)\n");
+        printf("[-long]: listado largo. \n");
+        printf("[-hid]: incluye los ficheros ocultos. \n");
+        printf("[-acc]: acesstime. \n");
+        printf("[-link]: si el enlace es simbólico, el path contenido. \n");
     }
     else if (strcmp("erase",cadena) == 0){
         printf("erase: elimina archivos y/o directorios vacíos\n");
@@ -269,7 +273,6 @@ void help(char cadena[]){
     else if (strcmp("delrec",cadena) == 0){
         printf("delrec: elimina archivos y/o directorios no vacíos de forma recursiva\n");
     }
-
 }
 
 void inicicializarFileLIst(tListF *F){
@@ -376,16 +379,15 @@ void makefile(const char filename[]) {
         printf("Error, introduce un nombre para el archivo a continuacion de makefile.\n");
     }
     else{
-        fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-
-        if (fd == -1) {
-            perror("Error al crear el archivo");
-            return;
+        if ((fd = open(filename, O_CREAT, 0777)) == -1) {
+            perror("Imposible crear fichero\n");
         }
+        fopen(filename, "O_CREAT");
+
+
 
         printf("Archivo %s creado con éxito.\n", filename);
         close(fd);
-
     }
 }
 
@@ -433,7 +435,6 @@ char * ConvierteModo2 (mode_t m)
     return permisos;
 }
 
-
 void prueba(){
     struct stat sb;
     stat("carpeta", &sb);
@@ -466,42 +467,42 @@ void listfile(char *filename[]) {
         return;
     }
 
-    if (stat(filename[aux == -1 ? 0 : 1], &fileStat) == -1) {
+    if (lstat(filename[aux == -1 ? 0 : 1], &fileStat) == -1) {
         perror("Error al obtener la información del archivo");
         return;
     }
+
     strftime(formatted_date, sizeof(formatted_date), "%Y/%m/%d-%H:%M", localtime(&fileStat.st_mtime));
 
     if (aux == 0) {  // -long
         struct passwd *pw = getpwuid(fileStat.st_uid);
         struct group  *gr = getgrgid(fileStat.st_gid);
-        char *permissions = ConvierteModo2(fileStat.st_mode);
+        char *permisos = ConvierteModo2(fileStat.st_mode);
 
-        printf("%s   1 (%ld)    %s    %s %s %8ld %s \n",
+        printf("%s   %ld (%ld) %s %s %s %8ld %s\n",
                formatted_date,
                fileStat.st_nlink,
-               pw ? pw->pw_name : "desconocido",
-               gr ? gr->gr_name : "desconocido",
-               permissions,
+               fileStat.st_ino,
+               pw->pw_name,
+               gr->gr_name,
+               permisos,
                fileStat.st_size,
-               filename[1]
-               );
+               filename[1]);
     }
-    else if (aux == 1) {  // -acc
-        strcpy(acces_date,ctime(&fileStat.st_atime));
-        eliminarEnter(acces_date);
+    else if (aux == 1) {
+        struct tm *lt = localtime(&fileStat.st_atime);
+
+        strftime(acces_date, sizeof(acces_date), "%Y/%m/%d-%H:%M", lt);
 
         printf("%8ld   %s %s\n", fileStat.st_size, acces_date, filename[1]);
-        return;
     }
     else if (aux == 2) {  // -link
-
-        if ( LetraTF(fileStat.st_mode) == 'l') {
+        if (LetraTF(fileStat.st_mode) == 'l') {
             char link_path[PATH_MAX];
             ssize_t len = readlink(filename[1], link_path, sizeof(link_path) - 1);
             if (len != -1) {
                 link_path[len] = '\0';
-                printf("El enlace simbólico apunta a: %s\n", link_path);
+                printf("%8ld   %s -> %s\n", fileStat.st_size, filename[1],link_path);
             } else {
                 perror("Error al leer el enlace simbólico");
             }
@@ -578,7 +579,6 @@ void erase(const char *path) {
         perror("Error al obtener información del archivo o directorio");
         return;
     }
-
     if (S_ISREG(path_stat.st_mode)) {
 
         if (unlink(path) == 0) {
@@ -586,14 +586,16 @@ void erase(const char *path) {
         } else {
             perror("Error al eliminar el archivo");
         }
-    } else if (S_ISDIR(path_stat.st_mode)) {
+    }
+    else if (S_ISDIR(path_stat.st_mode)) {
 
         if (rmdir(path) == 0) {
             printf("Directorio %s eliminado con éxito.\n", path);
         } else {
             perror("Error al eliminar el directorio (¿puede que no esté vacío?)");
         }
-    } else {
+    }
+    else {
         printf("El camino %s no es un archivo regular ni un directorio vacío.\n", path);
     }
 }
@@ -673,7 +675,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             }
         }
         else if (strcmp("prueba", trozos[0]) == 0){
-                    prueba();
+            prueba();
         }
         else if (strcmp("dup", trozos[0]) == 0){
             Cmd_dup(trozos+1,*F);
@@ -698,7 +700,6 @@ void Cmd_open (char *tr[], tListF F) {
         ListarFicherosAbiertos(F);  //Imprime el historial de archivos abiertos (open)
         return;
     }
-
     for (i = 1; tr[i] != NULL; i++) {
         if (!strcmp(tr[i], "cr")) mode |= O_CREAT;
         else if (!strcmp(tr[i], "ex")) mode |= O_EXCL;
@@ -732,10 +733,8 @@ void Cmd_open (char *tr[], tListF F) {
             fopen(tr[0], "mode");
             strcpy(Mod, "O_TRUNC");
         }
-
         printf("Añadida entrada a la tabla ficheros abiertos..................\n");
         AnadirAFicherosAbiertos(&F, df, tr[0], Mod);
-
     }
 }
 
@@ -779,8 +778,8 @@ void historial (char cadena[], tList L, bool terminado, tListF F) {
             printf("%i -> %s\n",p+aux, j->elemento.datos );
             p++;
         }
-
-    }else{
+    }
+    else{
         printf("Comando 'historic %s' no reconocido\n", cadena);
     }
 }
@@ -802,8 +801,5 @@ int main() {
         leerEntrada(cadena,&L);
         procesarEntrada(cadena, trozos, &terminado,L, &F);
     }
-
     return 0;
 }
-
-
