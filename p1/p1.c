@@ -507,7 +507,7 @@ void listfile(char *filename[]) {
     }
 }
 
-
+//listdir lists directories contents
 void listdir(char *path[]) {
     DIR *dir;
     struct dirent *entry;
@@ -578,7 +578,7 @@ void listdir(char *path[]) {
         }
     }
 
-    closedir(dir); 
+    closedir(dir);
 }
 
 void reclist(char *path[]) {
@@ -604,8 +604,7 @@ void reclist(char *path[]) {
     } else if (strcmp("-hid", path[0]) == 0) {
         aux = 3;
     }
-
-
+        // reclist -long // reclist -[...]
     if (path[1] == NULL && aux != -1) {
         cd(NULL);
         return;
@@ -615,19 +614,86 @@ void reclist(char *path[]) {
 
     if (aux != -1) {
         char *listdir_args[] = {path[0], path[1], NULL};
-        listdir(listdir_args);
+        listdir(listdir_args); 
     } else {
         char *listdir_args[] = {path[0], NULL};
-        listdir(listdir_args);
+        listdir(listdir_args);  
     }
     if ((dir = opendir(path[es_doble])) == NULL) {
         perror("Error al abrir el directorio");
         return;
     }
 
-
+    
     while ((entry = readdir(dir)) != NULL) {
         // Ignorar "." y ".."
+        if (aux != 3){
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+        }
+       
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path[es_doble], entry->d_name);
+
+        struct stat fileStat;
+        if (lstat(fullpath, &fileStat) == -1) {
+            perror("Error al obtener la información del archivo");
+            continue;
+        }
+
+        
+        if (S_ISDIR(fileStat.st_mode)) {
+            if (aux == 0 || aux == 1 || aux == 2 ) {
+                envio_file[0] = path[0];   
+                envio_file[1] = fullpath; 
+            }
+            else {
+                envio_file[0] = fullpath;
+            }
+            reclist(envio_file);
+        }
+    }
+    closedir(dir);
+}
+
+
+void revlist(char *path[]) {
+    DIR *dir;
+    struct dirent *entry;
+    char fullpath[1024];
+    int aux = -1;
+    int es_doble;
+    char *envio_file[15] = {NULL};
+
+    if (path[0] == NULL) {
+        cd(NULL);
+        return;
+    }
+
+    if (strcmp("-long", path[0]) == 0) {
+        aux = 0;
+    } else if (strcmp("-acc", path[0]) == 0) {
+        aux = 1;
+    } else if (strcmp("-link", path[0]) == 0) {
+        aux = 2;
+    } else if (strcmp("-hid", path[0]) == 0) {
+        aux = 3;
+    }
+
+    if (path[1] == NULL && aux != -1) {
+        cd(NULL);
+        return;
+    }
+
+    es_doble = (aux == -1 ? 0 : 1);
+
+    if ((dir = opendir(path[es_doble])) == NULL) {
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+    while ((entry = readdir(dir)) != NULL) {
+
         if (aux != 3){
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
@@ -642,24 +708,27 @@ void reclist(char *path[]) {
             continue;
         }
 
-
         if (S_ISDIR(fileStat.st_mode)) {
             if (aux == 0 || aux == 1 || aux == 2 ) {
-                envio_file[0] = path[0];   // (-long, -acc, -link, -hid)
-                envio_file[1] = fullpath;  // Ruta del archivo
+                envio_file[0] = path[0];   
+                envio_file[1] = fullpath;  
             }
             else {
                 envio_file[0] = fullpath;
             }
-            reclist(envio_file);
+            revlist(envio_file);
         }
     }
+
+    if (aux != -1) {
+        char *listdir_args[] = {path[0], path[1], NULL};
+        listdir(listdir_args);
+    } else {
+        char *listdir_args[] = {path[0], NULL};
+        listdir(listdir_args);
+    }
+
     closedir(dir);
-}
-
-
-void revlist(){
-
 }
 
 void erase(const char *path) {
@@ -685,9 +754,6 @@ void erase(const char *path) {
             perror("Error al eliminar el directorio (¿puede que no esté vacío?)");
         }
     }
-    else {
-        printf("El camino %s no es un archivo regular ni un directorio vacío.\n", path);
-    }
 }
 
 void delrec(const char *path) {
@@ -700,7 +766,7 @@ void delrec(const char *path) {
 
     if (S_ISREG(path_stat.st_mode) || S_ISLNK(path_stat.st_mode)) {
         if (unlink(path) == 0) {
-            printf("Archivo %s eliminado con éxito.\n", path);
+
         } else {
             perror("Error al eliminar el archivo");
         }
@@ -718,7 +784,7 @@ void delrec(const char *path) {
         }
 
         while ((entry = readdir(dir)) != NULL) {
-            // Omitir las entradas "." y ".."
+
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
             }
@@ -730,12 +796,9 @@ void delrec(const char *path) {
         closedir(dir);
 
         if (rmdir(path) == 0) {
-            printf("Directorio %s eliminado con éxito.\n", path);
         } else {
             perror("Error al eliminar el directorio");
         }
-    } else {
-        printf("El camino %s no es un archivo regular ni un directorio.\n", path);
     }
 }
 
