@@ -507,90 +507,156 @@ void listfile(char *filename[]) {
     }
 }
 
-//listdir lists directories contents
-void listdir( char *path[]) {
+
+void listdir(char *path[]) {
     DIR *dir;
     struct dirent *entry;
     char fullpath[1024];
-    char *envio_file[15];
-    int aux = -1;
     struct stat fileStat;
-    char formatted_date[50];
-    char acces_date[50];
+    int aux = -1;
+    int es_doble;
+    char *envio_file[15] = {NULL};
 
-    if (path[0] == NULL ) {
+    if (path[0] == NULL) {
         cd(NULL);
         return;
     }
+
+
     if (strcmp("-long", path[0]) == 0) {
         aux = 0;
     } else if (strcmp("-acc", path[0]) == 0) {
         aux = 1;
     } else if (strcmp("-link", path[0]) == 0) {
         aux = 2;
-    }else if (strcmp("-hid", path[0]) == 0){
+    } else if (strcmp("-hid", path[0]) == 0) {
         aux = 3;
     }
+
     if (path[1] == NULL && aux != -1) {
         cd(NULL);
         return;
     }
-    aux = (aux == -1 ? 0 : 1);
-    if (lstat(path[aux == -1 ? 0 : 1], &fileStat) == -1) {
-        perror("Error al obtener la información del archivo");
-        return;
-    }
-    strftime(formatted_date, sizeof(formatted_date), "%Y/%m/%d-%H:%M", localtime(&fileStat.st_mtime));
 
-    if ((dir = opendir(path[aux])) == NULL) {
-        perror("Error al abrir el directorio ");
-        return;
-    }
-    printf("**%s\n", path[aux]);
+    es_doble = (aux == -1 ? 0 : 1);
 
-    while ((entry = readdir(dir)) != NULL) {
-
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-            continue;
-        // construir la ruta completa al archivo
-        snprintf(fullpath, sizeof(fullpath), "%s/%s", path[0], entry->d_name);
-
-        if (aux == 0){
-            strcpy(envio_file[0],fullpath);
-            listfile(envio_file);
-        }else{
-            printf("hola\n");
-            strcpy(envio_file[0],path[0]);
-            strcpy(envio_file[1],fullpath);
-            printf("%s %s\n",envio_file[0], envio_file[1]);
-            //listfile(envio_file);
-        }
-
-    }
-    closedir(dir); // cierra el directorio
-}
-
-void reclist(const char *path) {
-
-    DIR *dir; // puntero que usaremos para abrir un directorio
-    struct dirent *entry; // almacenamos la información de cada archivo o subdirectorio
-    if ((dir = opendir(path)) == NULL) { // abrimos el directorio en una ruta específica
+    if ((dir = opendir(path[es_doble])) == NULL) {
         perror("Error al abrir el directorio");
         return;
     }
-    while ((entry = readdir(dir)) != NULL) { // lee la siguiente entrada hasta que no haya más entradas
-        if (entry->d_type == DT_DIR) { // verifica si la entrada actual es un subdirectorio
-            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-                char newpath[PATH_MAX];
-                snprintf(newpath, sizeof(newpath), "%s/%s", path, entry->d_name);
-                reclist(newpath); // listamos el contenido encontrado
+
+    printf("************%s\n", path[es_doble]);
+
+    while ((entry = readdir(dir)) != NULL) {
+
+        if (aux != 3){
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
             }
+        }
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path[es_doble], entry->d_name);
+
+        if (lstat(fullpath, &fileStat) == -1) {
+            perror("Error al obtener la información del archivo");
+            continue;
+        }
+
+
+        if (aux == -1) {
+            printf("%8ld  %s\n", fileStat.st_size, entry->d_name);
         } else {
-            printf("%s/%s\n", path, entry->d_name);
+
+            if (aux == 0 || aux == 1 || aux == 2 ) {
+                envio_file[0] = path[0];
+                envio_file[1] = fullpath;
+            }
+            else {
+                envio_file[0] = fullpath;
+            }
+
+            listfile(envio_file);
+        }
+    }
+
+    closedir(dir); 
+}
+
+void reclist(char *path[]) {
+    DIR *dir;
+    struct dirent *entry;
+    char fullpath[1024];
+    int aux = -1;
+    int es_doble;
+    char *envio_file[15] = {NULL};
+
+    //reclist
+    if (path[0] == NULL) {
+        cd(NULL);
+        return;
+    }
+
+    if (strcmp("-long", path[0]) == 0) {
+        aux = 0;
+    } else if (strcmp("-acc", path[0]) == 0) {
+        aux = 1;
+    } else if (strcmp("-link", path[0]) == 0) {
+        aux = 2;
+    } else if (strcmp("-hid", path[0]) == 0) {
+        aux = 3;
+    }
+
+
+    if (path[1] == NULL && aux != -1) {
+        cd(NULL);
+        return;
+    }
+
+    es_doble = (aux == -1 ? 0 : 1);
+
+    if (aux != -1) {
+        char *listdir_args[] = {path[0], path[1], NULL};
+        listdir(listdir_args);
+    } else {
+        char *listdir_args[] = {path[0], NULL};
+        listdir(listdir_args);
+    }
+    if ((dir = opendir(path[es_doble])) == NULL) {
+        perror("Error al abrir el directorio");
+        return;
+    }
+
+
+    while ((entry = readdir(dir)) != NULL) {
+        // Ignorar "." y ".."
+        if (aux != 3){
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                continue;
+            }
+        }
+
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path[es_doble], entry->d_name);
+
+        struct stat fileStat;
+        if (lstat(fullpath, &fileStat) == -1) {
+            perror("Error al obtener la información del archivo");
+            continue;
+        }
+
+
+        if (S_ISDIR(fileStat.st_mode)) {
+            if (aux == 0 || aux == 1 || aux == 2 ) {
+                envio_file[0] = path[0];   // (-long, -acc, -link, -hid)
+                envio_file[1] = fullpath;  // Ruta del archivo
+            }
+            else {
+                envio_file[0] = fullpath;
+            }
+            reclist(envio_file);
         }
     }
     closedir(dir);
 }
+
 
 void revlist(){
 
@@ -736,10 +802,10 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             listdir(trozos+1);
         }
         else if (strcmp("reclist", trozos[0]) == 0){
-            reclist(trozos[1] != NULL ? trozos[1] : ".");
+            reclist(trozos+1);
         }
         else if (strcmp("revlist", trozos[0]) == 0){
-            revlist(trozos[1] != NULL ? trozos[1] : ".");
+            revlist(trozos+1);
         }
         else if (strcmp("erase", trozos[0]) == 0) {
             if (trozos[1] != NULL) {
