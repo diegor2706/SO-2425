@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <pwd.h> // necesaria para el listfile -long
 #include <grp.h> // necesaria para el listfile -long
-#include <errno.h> // para el delrec
+
 
 void historial (char cadena[], tList L, bool terminado, tListF f);
 
@@ -436,14 +436,6 @@ char * ConvierteModo2 (mode_t m)
     return permisos;
 }
 
-void prueba(){
-    struct stat sb;
-    stat("carpeta", &sb);
-    char tipo = LetraTF(sb.st_mode);
-    printf("%c\n", tipo);
-}
-
-
 //listfile gives information on files or directories
 void listfile(char *filename[]) {
     struct stat fileStat;
@@ -517,21 +509,44 @@ void listfile(char *filename[]) {
 
 //listdir lists directories contents
 void listdir( char *path[]) {
-
     DIR *dir;
     struct dirent *entry;
     char fullpath[1024];
-    char *envio_file[100];
+    char *envio_file[15];
+    int aux = -1;
+    struct stat fileStat;
+    char formatted_date[50];
+    char acces_date[50];
 
-    if (path == NULL ) {
+    if (path[0] == NULL ) {
         cd(NULL);
         return;
     }
-    if ((dir = opendir(path[0])) == NULL) {
-        perror("Error al abrir el directorio");
+    if (strcmp("-long", path[0]) == 0) {
+        aux = 0;
+    } else if (strcmp("-acc", path[0]) == 0) {
+        aux = 1;
+    } else if (strcmp("-link", path[0]) == 0) {
+        aux = 2;
+    }else if (strcmp("-hid", path[0]) == 0){
+        aux = 3;
+    }
+    if (path[1] == NULL && aux != -1) {
+        cd(NULL);
         return;
     }
-    printf("************%s\n", path[0]);
+    aux = (aux == -1 ? 0 : 1);
+    if (lstat(path[aux == -1 ? 0 : 1], &fileStat) == -1) {
+        perror("Error al obtener la información del archivo");
+        return;
+    }
+    strftime(formatted_date, sizeof(formatted_date), "%Y/%m/%d-%H:%M", localtime(&fileStat.st_mtime));
+
+    if ((dir = opendir(path[aux])) == NULL) {
+        perror("Error al abrir el directorio ");
+        return;
+    }
+    printf("**%s\n", path[aux]);
 
     while ((entry = readdir(dir)) != NULL) {
 
@@ -540,9 +555,17 @@ void listdir( char *path[]) {
         // construir la ruta completa al archivo
         snprintf(fullpath, sizeof(fullpath), "%s/%s", path[0], entry->d_name);
 
-        // llamar a listfile con la ruta completa
-        strcpy(envio_file[0],fullpath);
-        listfile(envio_file);
+        if (aux == 0){
+            strcpy(envio_file[0],fullpath);
+            listfile(envio_file);
+        }else{
+            printf("hola\n");
+            strcpy(envio_file[0],path[0]);
+            strcpy(envio_file[1],fullpath);
+            printf("%s %s\n",envio_file[0], envio_file[1]);
+            //listfile(envio_file);
+        }
+
     }
     closedir(dir); // cierra el directorio
 }
@@ -608,12 +631,16 @@ void delrec(const char *path) {
         perror("Error al obtener información del archivo o directorio");
         return;
     }
+
     if (S_ISREG(path_stat.st_mode) || S_ISLNK(path_stat.st_mode)) {
-        if (unlink(path) != 0) {
+        if (unlink(path) == 0) {
+            printf("Archivo %s eliminado con éxito.\n", path);
+        } else {
             perror("Error al eliminar el archivo");
         }
         return;
     }
+
     if (S_ISDIR(path_stat.st_mode)) {
         DIR *dir = opendir(path);
         struct dirent *entry;
@@ -625,18 +652,22 @@ void delrec(const char *path) {
         }
 
         while ((entry = readdir(dir)) != NULL) {
+            // Omitir las entradas "." y ".."
             if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
                 continue;
             }
+
+            snprintf(subpath, sizeof(subpath), "%s/%s", path, entry->d_name);
+
             delrec(subpath);
         }
-
         closedir(dir);
 
-        if (rmdir(path) != 0) {
+        if (rmdir(path) == 0) {
+            printf("Directorio %s eliminado con éxito.\n", path);
+        } else {
             perror("Error al eliminar el directorio");
         }
-
     } else {
         printf("El camino %s no es un archivo regular ni un directorio.\n", path);
     }
@@ -644,6 +675,7 @@ void delrec(const char *path) {
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
     TrocearCadena(cadena, trozos);
+
 
     if (trozos[0] != NULL){
         if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0) ){
@@ -700,7 +732,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         else if (strcmp("cwd", trozos[0]) == 0){
             cwd (trozos[1]);
         }
-        else if (strcmp("listdir", trozos[0]) == 0){
+        else if (strcmp(trozos[0], "listdir") == 0) {
             listdir(trozos+1);
         }
         else if (strcmp("reclist", trozos[0]) == 0){
@@ -715,9 +747,6 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             } else {
                 printf("Uso: erase <ruta>\n");
             }
-        }
-        else if (strcmp("prueba", trozos[0]) == 0){
-            prueba();
         }
         else if (strcmp("delrec", trozos[0]) == 0){
             if (trozos[1] != NULL) {
