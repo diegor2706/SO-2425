@@ -274,6 +274,51 @@ void help(char cadena[]){
     else if (strcmp("delrec",cadena) == 0){
         printf("delrec: elimina archivos y/o directorios no vacíos de forma recursiva\n");
     }
+    else if (strcmp("allocate", cadena) == 0){
+        printf("allocate [-malloc|-shared|-createshared|-mmap]... Asigna un bloque de memoria\n");
+        printf("[-malloc] [tam]: asigna un bloque malloc de tamano tam\n");
+        printf("[-createshared] [cl] [tam]: asigna (creando) el bloque de memoria compartida de clave cl y tamano tam\n");
+        printf("[-shared] [cl]: asigna el bloque de memoria compartida (ya existente) de clave cl\n");
+        printf("[-mmap] [fich] [perm]: mapea el fichero fich, perm son los permisos\n");
+    }
+    else if(strcmp("deallocate", cadena) == 0){
+        printf("deallocate [-malloc|-shared|-delkey|-mmap|addr]..\tDesasigna un bloque de memoria\n");
+        printf("[-malloc] [tam]: desasigna el bloque malloc de tamano tam\n");
+        printf("[-shared] [cl]: desasigna (desmapea) el bloque de memoria compartida de clave cl\n");
+        printf("[-delkey] [cl]: elimina del sistema (sin desmapear) la clave de memoria cl\n");
+        printf("[-mmap] [fich]: desmapea el fichero mapeado fich\n");
+        printf("addr: desasigna el bloque de memoria en la direccion addr\n");
+    }
+    else if(strcmp("memfill", cadena) == 0){
+        printf("memfill addr cont byte \tLlena la memoria a partir de addr con byte\n");
+    }
+    else if(strcmp("memdump", cadena) == 0){
+        printf("memdump addr cont \tVuelca en pantallas los contenidos (cont bytes) de la posicion de memoria addr\n");
+    }
+    else if(strcmp("memory", cadena) == 0){
+        printf("memory [-blocks|-funcs|-vars|-all|-pmap] ..\tMuestra muestra detalles de la memoria del proceso\n");
+        printf("[-blocks]: los bloques de memoria asignados\n");
+        printf("[-funcs]: las direcciones de las funciones\n");
+        printf("[-vars]: las direcciones de las variables\n");
+        printf("[:-all]: todo (-funcs, -vars y -blocks)\n");
+        printf("[-pmap]: muestra la salida del comando pmap(o similar)\n");
+    }
+    else if(strcmp("readfile", cadena) == 0){
+        printf("readfile fiche addr cont \tLee cont bytes desde fich a la direccion addr\n");
+    }
+    else if(strcmp("writefle", cadena) == 0){
+        printf("writefile [-o] fiche addr cont \tEscribe cont bytes desde la direccion addr a fich (-o sobreescribe)\n");
+    }
+    else if(strcmp("read", cadena) == 0) {
+        printf("read df addr cont\tTransfiere cont bytes del fichero descrito por df a la dirección addr\n");
+    }
+    else if(strcmp("write", cadena) == 0){
+        printf("write df addr cont\tTransfiere cont bytes desde la dirección addr al fichero descrito por df\n");
+    }
+    else if(strcmp("recurse", cadena) == 0){
+        printf("recurse [n]\tInvoca a la funcion recursiva n veces\n");
+    }
+    else printf("comando no reconocido\n");
 }
 
 void inicicializarFileLIst(tListF *F){
@@ -734,6 +779,11 @@ void revlist(char *path[]) {
 void erase(const char *path) {
     struct stat path_stat;
 
+    if (path == NULL) {
+        cd(NULL);
+        return;
+    }
+
     if (lstat(path, &path_stat) == -1) {
         perror("Error al obtener información del archivo o directorio");
         return;
@@ -800,6 +850,32 @@ void delrec(const char *path) {
             perror("Error al eliminar el directorio");
         }
     }
+}
+
+void allocate (char *cadena[]){
+    if (cadena[0] == NULL){
+        printf("TIENE QUE LISTAR LA LISTA\n");
+        return;
+    }
+    else if (strcmp(cadena[0],"-malloc") == 0){
+        if (cadena[1] == NULL){
+            printf("TIENE QUE LISTAR LA LISTA\n");
+        }else if(esNumero(cadena[1])&& malloc(sizeof(atoi(cadena[1])))){
+            printf("hace malloc\n");
+        }
+        else{
+            printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
+        }
+    }else if(strcmp(cadena[0], "-mmap") == 0) {
+        printf("HOLA\n");
+    }else if(strcmp(cadena[0], "create") == 0 && strcmp(cadena[1], "shared") == 0){
+        printf("HOLA1\n");
+    }else if(strcmp(cadena[0], "shared") == 0){
+        printf("HOLA2\n");
+    }else{
+        printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
+    }
+
 }
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
@@ -871,11 +947,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             revlist(trozos+1);
         }
         else if (strcmp("erase", trozos[0]) == 0) {
-            if (trozos[1] != NULL) {
-                erase(trozos[1]);
-            } else {
-                printf("Uso: erase <ruta>\n");
-            }
+            erase(trozos[1]);
         }
         else if (strcmp("delrec", trozos[0]) == 0){
             if (trozos[1] != NULL) {
@@ -886,6 +958,9 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if (strcmp("dup", trozos[0]) == 0){
             Cmd_dup(trozos+1,*F);
+        }
+        else if(strcmp("allocate", trozos[0]) == 0){
+            allocate(trozos+1);
         }
         else{
             printf("Comando no reconocido\n");
