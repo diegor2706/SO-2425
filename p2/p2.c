@@ -9,6 +9,7 @@
 #include <time.h>
 #include "Lista.c"  // Incluye el archivo de encabezado correspondiente
 #include "File.c"   // Incluye el archivo de encabezado correspondiente
+#include "Memory.c" // Incluye el archivo de encabezado correspondiente
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h> // para el pid y el ppid
@@ -22,7 +23,7 @@
 #include <grp.h> // necesaria para el listfile -long
 
 
-void historial (char cadena[], tList L, bool terminado, tListF f);
+void historial (char cadena[], tList L, bool terminado, tListF f, tListM M);
 
 void Cmd_open (char * tr[], tListF F);
 
@@ -875,10 +876,21 @@ void allocate (char *cadena[]){
     }else{
         printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
     }
-
 }
 
-void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F){
+void test1(tListM M){
+
+    insertMItem("Direccion1", 150, "Fecha1", "funcion1", MNULL, &M);
+    insertMItem("Direccion2", 150, "Fecha2", "funcion2", MNULL, &M);
+    tPosM i = M;
+
+    for (; i != MNULL; i = i->siguiente){
+        printf("%s   %i   %s   %s",  i->elemento.direccion,i->elemento.tam,i->elemento.fecha,i->elemento.funcion);
+        printf("\n");
+    }
+}
+
+void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
     TrocearCadena(cadena, trozos);
 
 
@@ -906,7 +918,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             cd (trozos[1]);
         }
         else if(strcmp("historic", trozos[0]) == 0) {
-            historial(trozos[1], L, *terminado, *F);
+            historial(trozos[1], L, *terminado, *F, *M);
         }
         else if (strcmp("infosys", trozos[0]) == 0){
             infosys();
@@ -961,6 +973,9 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if(strcmp("allocate", trozos[0]) == 0){
             allocate(trozos+1);
+        }
+        else if(strcmp("test", trozos[0]) == 0){
+            test1(*M);
         }
         else{
             printf("Comando no reconocido\n");
@@ -1020,7 +1035,7 @@ void Cmd_open (char *tr[], tListF F) {
     }
 }
 
-void historial (char cadena[], tList L, bool terminado, tListF F) {
+void historial (char cadena[], tList L, bool terminado, tListF F, tListM M) {
 
     tPosL i, j; // posición del comando en la lista
     int p = 0;  // posición del comando en el historial
@@ -1047,7 +1062,7 @@ void historial (char cadena[], tList L, bool terminado, tListF F) {
             printf("Ejecutando hist (%d): %s\n", aux, i->elemento.datos);
 
             strcpy(auxi,i->elemento.datos);
-            procesarEntrada(auxi, trozos, &terminado, L, &F);
+            procesarEntrada(auxi, trozos, &terminado, L, &F, &M);
         }
     }
     else if (('-' == cadena[0]) && esNumero(cadena+1) && (cadena[1] != '\0')) { // repetir los últimos N comandos
@@ -1073,15 +1088,17 @@ int main() {
     char *trozos[10];
     tList L;
     tListF F;
+    tListM M;
 
     createEmptyList(&L);
     createEmptyFileList(&F);
+    createEmptyMemoryList(&M);
     inicicializarFileLIst(&F);
 
     while (!terminado){
         imprimirPrompt();
         leerEntrada(cadena,&L);
-        procesarEntrada(cadena, trozos, &terminado,L, &F);
+        procesarEntrada(cadena, trozos, &terminado,L, &F, &M);
     }
     return 0;
 }
