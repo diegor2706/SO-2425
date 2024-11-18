@@ -21,7 +21,13 @@
 #include <sys/types.h>
 #include <pwd.h> // necesaria para el listfile -long
 #include <grp.h> // necesaria para el listfile -long
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <errno.h>
+#include <sys/mman.h>
 
+
+#define TAMANO 2048
 
 void historial (char cadena[], tList L, bool terminado, tListF f, tListM M);
 
@@ -853,41 +859,189 @@ void delrec(const char *path) {
     }
 }
 
-void allocate (char *cadena[]){
+void Recursiva (int n)
+{
+    char automatico[TAMANO];
+    static char estatico[TAMANO];
+
+    printf ("parametro:%3d(%p) array %p, arr estatico %p\n",n,&n,automatico, estatico);
+
+    if (n>0)
+        Recursiva(n-1);
+}
+
+void LlenarMemoria (void *p, size_t cont, unsigned char byte)
+{
+    unsigned char *arr=(unsigned char *) p;
+    size_t i;
+
+    for (i=0; i<cont;i++)
+        arr[i]=byte;
+}
+
+void InsertarNodoShared (&L, p, s.shm_segsz, clave) {
+
+}
+
+void ImprimirListaShared(tListM  *L){ // necesaria para do_AllocateCreateshared y do_AllocateShared
+
+}
+
+void ImprimirListaMmap(tListM *L){
+
+}
+
+
+void * ObtenerMemoriaShmget (key_t clave, size_t tam)
+{
+    void * p;
+    int aux,id,flags=0777;
+    struct shmid_ds s;
+
+    if (tam)     /*tam distito de 0 indica crear */
+        flags=flags | IPC_CREAT | IPC_EXCL; /*cuando no es crear pasamos de tamano 0*/
+    if (clave==IPC_PRIVATE)  /*no nos vale*/
+    {errno=EINVAL; return NULL;}
+    if ((id=shmget(clave, tam, flags))==-1)
+        return (NULL);
+    if ((p=shmat(id,NULL,0))==(void*) -1){
+        aux=errno;
+        if (tam)
+            shmctl(id,IPC_RMID,NULL);
+        errno=aux;
+        return (NULL);
+    }
+    shmctl (id,IPC_STAT,&s); /* si no es crear, necesitamos el tamano, que es s.shm_segsz*/
+    /* Guardar en la lista   InsertarNodoShared (&L, p, s.shm_segsz, clave); */
+    return (p);
+}
+
+void do_AllocateCreateshared (char *tr[], tListM L) {
+    key_t cl;
+    size_t tam;
+    void *p;
+
+    if (tr[0]==NULL || tr[1]==NULL) {
+        ImprimirListaShared(&L);
+        return;
+    }
+
+    cl=(key_t)  strtoul(tr[0],NULL,10);
+    tam=(size_t) strtoul(tr[1],NULL,10);
+    if (tam==0) {
+        printf ("No se asignan bloques de 0 bytes\n");
+        return;
+    }
+    if ((p=ObtenerMemoriaShmget(cl,tam))!=NULL)
+        printf ("Asignados %lu bytes en %p\n",(unsigned long) tam, p);
+    else
+        printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
+}
+
+void allocate (char *cadena[], tListM *L){
+
+    pid_t pid = getpid();
+
     if (cadena[0] == NULL){
-        printf("TIENE QUE LISTAR LA LISTA\n");
+        printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+        // debe listar la lista de todo lo que llevamos mapeado, etc
         return;
     }
     else if (strcmp(cadena[0],"-malloc") == 0){
         if (cadena[1] == NULL){
-            printf("TIENE QUE LISTAR LA LISTA\n");
-        }else if(esNumero(cadena[1])&& malloc(sizeof(atoi(cadena[1])))){
-            printf("hace malloc\n");
+            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+        }else if(esNumero(cadena[1])){
+
         }
         else{
             printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
         }
     }else if(strcmp(cadena[0], "-mmap") == 0) {
-        printf("HOLA\n");
-    }else if(strcmp(cadena[0], "create") == 0 && strcmp(cadena[1], "shared") == 0){
-        printf("HOLA1\n");
-    }else if(strcmp(cadena[0], "shared") == 0){
-        printf("HOLA2\n");
+        if (cadena[1] == NULL){
+            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+        }else if(esNumero(cadena[1])){
+
+        }
+        else{
+            printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
+        }
+
+    }else if(strcmp(cadena[0], "-createshared") == 0) {
+        if (cadena[1] == NULL){
+            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+        }else if(esNumero(cadena[1])){
+
+        }
+        else{
+            printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
+        }
+
+    }else if(strcmp(cadena[0], "-shared") == 0){
+        if (cadena[1] == NULL){
+            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+        }else if(esNumero(cadena[1])){
+
+        }
+        else{
+            printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
+        }
     }else{
         printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
     }
 }
 
-void test1(tListM M){
+void do_AllocateShared (char *tr[], tListM L)   //CUIDADO REVI
+{
+    key_t cl;
+    size_t tam;
+    void *p;
 
-    insertMItem("Direccion1", 150, "Fecha1", "funcion1", MNULL, &M);
-    insertMItem("Direccion2", 150, "Fecha2", "funcion2", MNULL, &M);
-    tPosM i = M;
-
-    for (; i != MNULL; i = i->siguiente){
-        printf("%s   %i   %s   %s",  i->elemento.direccion,i->elemento.tam,i->elemento.fecha,i->elemento.funcion);
-        printf("\n");
+    if (tr[0]==NULL) {
+        ImprimirListaShared(&L);
+        return;
     }
+
+    cl=(key_t)  strtoul(tr[0],NULL,10);
+
+    if ((p=ObtenerMemoriaShmget(cl,0))!=NULL)
+        printf ("Asignada memoria compartida de clave %lu en %p\n",(unsigned long) cl, p);
+    else
+        printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
+}
+
+void * MapearFichero (char * fichero, int protection)
+{
+    int df, map=MAP_PRIVATE,modo=O_RDONLY;
+    struct stat s;
+    void *p;
+
+    if (protection&PROT_WRITE)
+        modo=O_RDWR;
+    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
+        return NULL;
+    if ((p=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
+        return NULL;
+/* Guardar en la lista    InsertarNodoMmap (&L,p, s.st_size,df,fichero); */
+/* Gurdas en la lista de descriptores usados df, fichero*/
+    return p;
+}
+
+void do_AllocateMmap(char *arg[], tListM L) {
+    char *perm;
+    void *p;
+    int protection=0;
+
+    if (arg[0]==NULL)
+    {ImprimirListaMmap(&L); return;}
+    if ((perm=arg[1])!=NULL && strlen(perm)<4) {
+        if (strchr(perm,'r')!=NULL) protection|=PROT_READ;
+        if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
+        if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
+    }
+    if ((p=MapearFichero(arg[0],protection))==NULL)
+        perror ("Imposible mapear fichero");
+    else
+        printf ("fichero %s mapeado en %p\n", arg[0], p);
 }
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
@@ -972,10 +1126,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             Cmd_dup(trozos+1,*F);
         }
         else if(strcmp("allocate", trozos[0]) == 0){
-            allocate(trozos+1);
-        }
-        else if(strcmp("test", trozos[0]) == 0){
-            test1(*M);
+            allocate(trozos+1, M);
         }
         else{
             printf("Comando no reconocido\n");
