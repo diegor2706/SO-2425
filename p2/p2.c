@@ -79,10 +79,11 @@ void leerEntrada(char * cadena, tList *L){
     insertItem(cadena, LNULL, L);
 }
 
-void quit(bool *terminado, tList *L, tListF *F){
+void quit(bool *terminado, tList *L, tListF *F,tListM *M){
     *terminado = true;
     deleteList(L);
     deleteFileList(F);
+    deleteMemoryList(M);
 }
 
 void authors (char cadena[]){
@@ -878,11 +879,11 @@ void LlenarMemoria (void *p, size_t cont, unsigned char byte)
     for (i=0; i<cont;i++)
         arr[i]=byte;
 }
-
-void InsertarNodoShared (&L, p, s.shm_segsz, clave) {
+/*
+void InsertarNodoShared (tListM *L, void * p, s.shm_segsz, clave) {
 
 }
-
+*/
 void ImprimirListaShared(tListM  *L){ // necesaria para do_AllocateCreateshared y do_AllocateShared
 
 }
@@ -938,20 +939,56 @@ void do_AllocateCreateshared (char *tr[], tListM L) {
         printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
 }
 
-void allocate (char *cadena[], tListM *L){
+char* fecha_allocate() {
+    static char formatted_date[20];
+    time_t now = time(NULL);
+    struct tm *local = localtime(&now);
+
+    strftime(formatted_date, sizeof(formatted_date), "%b %d %H:%M", local);
+
+    return formatted_date;
+}
+
+void hacer_malloc(tListM *M, char *cadena){
+
+    int aux = atoi(cadena);
+
+    void *dir = malloc(aux);
+    printf("Asignados %s bytes en %p\n",cadena, dir);
+
+    insertMItem(dir,aux,fecha_allocate(), "malloc", "", MNULL, M);
+
+}
+
+void imprimirMalloc(tListM M){
+
+    tPosM i ;
+
+    for ( i = M ; i != MNULL; i = i->siguiente){
+
+        if (strcmp("malloc", i->elemento.funcion) == 0){
+        printf("\t\t %p \t\t %i %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha, i->elemento.funcion);
+        }
+    }
+}
+
+void allocate (char *cadena[], tListM *M){
 
     pid_t pid = getpid();
 
     if (cadena[0] == NULL){
         printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
-        // debe listar la lista de todo lo que llevamos mapeado, etc
+
         return;
     }
     else if (strcmp(cadena[0],"-malloc") == 0){
         if (cadena[1] == NULL){
-            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
-        }else if(esNumero(cadena[1])){
+            printf("******Lista de bloques asignados malloc para el proceso: %d \n", pid);
+            imprimirMalloc(*M);
 
+        }
+        else if(esNumero(cadena[1])) {
+            hacer_malloc(M,cadena[1]);
         }
         else{
             printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
@@ -1050,7 +1087,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
 
     if (trozos[0] != NULL){
         if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0) ){
-            quit(terminado, &L, F);
+            quit(terminado, &L, F, M);
         }
         else if(strcmp("authors", trozos[0]) == 0){
             authors(trozos[1]);
