@@ -8,9 +8,11 @@
 #include <stdbool.h>
 
 typedef struct elementM{
-    char direccion[MAXI];
+    void *direccion;
     char fecha [MAXI];
     char funcion[MAXI];
+    char identificador[MAXI];
+
     int tam;
 } elementM;
 
@@ -27,7 +29,7 @@ typedef tPosM tListM;
 void createEmptyMemoryList(tListM *M);
 bool isEmptyMemoryList(tListM M);
 bool createMemoryNode(tPosM *p);
-bool insertMItem(char *direc,int tam, char *fecha, char *funcion,tPosM p, tListM *L);
+bool insertMItem(void *direc,int tam, char *fecha, char *funcion, char *identificador, tPosM p, tListM *L);
 tPosM firstMemory(tListM M);
 tPosM lastMemory(tListM M);
 tPosM nextMemory(tPosM p, tListM M);
