@@ -15,6 +15,7 @@ typedef struct elementF{
     Descriptor descriptor;
     char nombre[MAX];
     char modo[MAX];
+    int offset;
 }elementF;
 
 typedef struct tNodeF *tPosF;
@@ -29,7 +30,7 @@ typedef tPosF tListF;
 void createEmptyFileList(tListF *F);
 bool isEmptyFileList(tListF F);
 bool createFileNode(tPosF *p);
-bool insertFileItem(Descriptor j, char *m,char *n, tPosF p, tListF *L);
+bool insertFileItem(Descriptor j, char *m,char *n, int offset,  tPosF p, tListF *L);
 tPosF firstFile(tListF L);
 tPosF lastFile(tListF L);
 tPosF nextFile(tPosF p, tListF L);
