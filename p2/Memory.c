@@ -5,6 +5,7 @@
 #include "Memory.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 void createEmptyMemoryList(tListM *M) {
     *M = MNULL;
@@ -19,7 +20,8 @@ bool createMemoryNode(tPosM *p){
     return *p != MNULL;
 }
 
-bool insertMItem(void *direccion, long tam, char *fecha, char *funcion, char *identificador,int id, tPosM p, tListM *L) {
+bool insertMItem(void *direccion, long tam, char *fecha, char *funcion, int df,int id, key_t  llave,tPosM p, tListM *L) {
+
     tPosM q, r;
 
     if (!createMemoryNode(&q)) {
@@ -29,8 +31,9 @@ bool insertMItem(void *direccion, long tam, char *fecha, char *funcion, char *id
         strcpy(q->elemento.fecha, fecha);
         strcpy(q->elemento.funcion, funcion);
         q->elemento.direccion = direccion; // Guardar la dirección directamente como puntero
-        strcpy(q->elemento.identificador, identificador);
+        q->elemento.df = df;
         q->elemento.id = id;
+        q->elemento.llave = llave;
 
         q->siguiente = MNULL;
         q->anterior = MNULL;
@@ -55,15 +58,19 @@ bool insertMItem(void *direccion, long tam, char *fecha, char *funcion, char *id
             strcpy(q->elemento.fecha, p->elemento.fecha);
             strcpy(q->elemento.funcion, p->elemento.funcion);
             q->elemento.direccion = p->elemento.direccion; // Copiar puntero
-            strcpy(q->elemento.identificador, p->elemento.identificador);
+            q->elemento.df = p->elemento.df;
             q->elemento.id = p->elemento.id;
+            q->elemento.llave = p->elemento.llave;
+
+
 
             p->elemento.tam = tam;
             strcpy(p->elemento.fecha, fecha);
             strcpy(p->elemento.funcion, funcion);
             p->elemento.direccion = direccion; // Actualizar dirección del nodo actual
-            strcpy(p->elemento.identificador, identificador);
+            p->elemento.df = df;
             p->elemento.id = id;
+            p->elemento.llave = llave;
 
             if (p->siguiente != MNULL) {
                 p->siguiente->anterior = q;

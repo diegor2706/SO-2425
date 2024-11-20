@@ -6,14 +6,17 @@
 #define MNULL NULL
 #define  MAXI 50
 #include <stdbool.h>
+#include <sys/types.h>
 
 typedef struct elementM{
     void *direccion;
     char fecha [MAXI];
     char funcion[MAXI];
-    char identificador[MAXI];
+    int  df;
     int id;
+    key_t llave;
     long tam;
+
 } elementM;
 
 typedef struct mNode *tPosM;
@@ -29,7 +32,7 @@ typedef tPosM tListM;
 void createEmptyMemoryList(tListM *M);
 bool isEmptyMemoryList(tListM M);
 bool createMemoryNode(tPosM *p);
-bool insertMItem(void *direc,long tam, char *fecha, char *funcion, char *identificador , int id, tPosM p, tListM *L);
+bool insertMItem(void *direc,long tam, char *fecha, char *funcion, int df , int id,key_t llave,tPosM p, tListM *L);
 tPosM firstMemory(tListM M);
 tPosM lastMemory(tListM M);
 tPosM nextMemory(tPosM p, tListM M);
