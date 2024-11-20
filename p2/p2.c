@@ -329,10 +329,10 @@ void help(char cadena[]){
     else printf("comando no reconocido\n");
 }
 
-void inicicializarFileLIst(tListF *F){
-    insertFileItem(0,"estandar O_RDWR", "entrada", FNULL, F);
-    insertFileItem(1,"estandar O_RDWR", "salida", FNULL, F);
-    insertFileItem(2,"estandar O_RDWR", "error", FNULL, F);
+    void inicicializarFileLIst(tListF *F){
+        insertFileItem(0,"estandar O_RDWR", "entrada",-1, FNULL, F);
+        insertFileItem(1,"estandar O_RDWR", "salida",-1 ,FNULL, F);
+        insertFileItem(2,"estandar O_RDWR", "error", -1,FNULL, F);
 }
 
 void ListarFicherosAbiertos(tListF F){
@@ -341,14 +341,18 @@ void ListarFicherosAbiertos(tListF F){
 
     for (i = firstFile(F); i != FNULL; i = nextFile(i, F)){
         while (j < i->data.descriptor){
-            printf("descriptor: %i -> no usado\n",j);
+            printf("descriptor: %i, offset: (  )-> no usado\n",j);
             j++;
-        }
-        printf("descriptor: %i -> %s %s\n", i->data.descriptor, i->data.nombre, i->data.modo);
+        }if (i->data.descriptor < 3){
+        printf("descriptor: %i, offset: (  ) -> %s %s\n", i->data.descriptor, i->data.nombre, i->data.modo);
         j ++;
+        }else{
+            printf("descriptor: %i, offset: ( %d ) -> %s %s\n", i->data.descriptor, i->data.offset, i->data.nombre, i->data.modo);
+            j ++;
+        }
     }
-    while (j < 10 ){
-        printf("descriptor: %i -> no usado\n",j);
+    while (j < 20 ){
+        printf("descriptor: %i, offset: (  ) -> no usado\n",j);
         j++;
     }
 }
@@ -361,15 +365,16 @@ void AnadirAFicherosAbiertos(tListF *F, int df, char *nombre, char *modo) {
     // Copiar el nombre del archivo y el modo de apertura
     strcpy(fileName, nombre);
     strcpy(fileMode, modo);
+    off_t offset = lseek(df, 0, SEEK_CUR);
 
     if (q->data.descriptor < df) {
-        if (insertFileItem(df, fileMode, fileName, NULL, F)) {
+        if (insertFileItem(df, fileMode, fileName,offset, NULL, F)) {
             printf("Archivo %s con descriptor %d y modo %s añadido a la lista de ficheros abiertos\n", nombre, df,modo);
 
         }
     } else {
         for (i = firstFile(*F); i->data.descriptor < df; i = i->siguiente);
-        if (insertFileItem(df, fileMode, fileName, i, F)) {
+        if (insertFileItem(df, fileMode, fileName, offset,i, F)) {
             printf("Archivo %s con descriptor %d y modo %s añadido a la lista de ficheros abiertos\n", nombre, df,modo);
 
         }else{
@@ -956,7 +961,8 @@ void hacer_malloc(tListM *M, char *cadena){
     void *dir = malloc(aux);
     printf("Asignados %s bytes en %p\n",cadena, dir);
 
-    insertMItem(dir,aux,fecha_allocate(), "malloc", "", MNULL, M);
+    insertMItem(dir, aux, fecha_allocate(), "malloc", "", 0 , MNULL, M);
+
 
 }
 
@@ -966,19 +972,76 @@ void imprimirMalloc(tListM M){
 
     for ( i = M ; i != MNULL; i = i->siguiente){
 
-        if (strcmp("malloc", i->elemento.funcion) == 0){
+        if (i->elemento.id == 0){
         printf("\t\t %p \t\t %i %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha, i->elemento.funcion);
         }
     }
 }
 
-void allocate (char *cadena[], tListM *M){
+void imprimirGeneral(tListM M){
+
+    tPosM i ;
+    for ( i = M ; i != MNULL; i = i->siguiente){
+            printf("\t\t %p \t\t %i %s %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha, i->elemento.funcion, i->elemento.identificador);
+        }
+}
+
+void imprimirMmap (tListM M) {
+    tPosM i;
+
+    for (i = M; i != MNULL; i = i->siguiente) {
+
+        if (i->elemento.id == 1){
+            printf("\t\t %p \t\t %i %s %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha,
+                   i->elemento.funcion, i->elemento.identificador);
+        }
+    }
+}
+
+void * MapearFichero (char * fichero, int protection, tListF F, tListM M) {
+    int df, map=MAP_PRIVATE,modo=O_RDONLY;
+    struct stat s;
+    void *p;
+    printf("%s\n",fichero);
+    if (protection&PROT_WRITE)
+        modo=O_RDWR;
+    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
+        return NULL;
+    if ((p=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
+        return NULL;
+
+    insertMItem(p,s.st_size,fecha_allocate(),fichero, "df", 1, MNULL, &M);
+    Cmd_open((char **) fichero, F);
+/* Guardar en la lista    InsertarNodoMmap (&L,p, s.st_size,df,fichero); */
+/* Gurdas en la lista de descriptores usados df, fichero*/
+    return p;
+}
+
+void do_AllocateMmap(char *arg[], tListM L,tListF F) {
+    char *perm;
+    void *p;
+    int protection=0;
+
+    if (arg[0]==NULL)
+    {imprimirMmap(L); return;}
+    if ((perm=arg[1])!=NULL && strlen(perm)<4) {
+        if (strchr(perm,'r')!=NULL) protection|=PROT_READ;
+        if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
+        if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
+    }
+    if ((p=MapearFichero(arg[0],protection,F ,L))==NULL)
+        perror ("Imposible mapear fichero");
+    else
+        printf ("fichero %s mapeado en %p\n", arg[0], p);
+}
+
+void allocate (char *cadena[], tListM *M, tListF  *F){
 
     pid_t pid = getpid();
 
     if (cadena[0] == NULL){
-        printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
-
+        printf("******Lista de bloques asignados malloc para el proceso: %d\n", pid);
+        imprimirGeneral(*M);
         return;
     }
     else if (strcmp(cadena[0],"-malloc") == 0){
@@ -994,16 +1057,12 @@ void allocate (char *cadena[], tListM *M){
             printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
         }
     }else if(strcmp(cadena[0], "-mmap") == 0) {
-        if (cadena[1] == NULL){
-            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
-        }else if(esNumero(cadena[1])){
 
-        }
-        else{
-            printf("uso: allocate [-malloc|-shared|-createshared|-mmap] ....\n");
-        }
+        printf("******Lista de bloques asignados malloc para el proceso: %d\n", pid);
+        do_AllocateMmap(cadena + 1, *M, *F);
 
-    }else if(strcmp(cadena[0], "-createshared") == 0) {
+    }
+    else if(strcmp(cadena[0], "-createshared") == 0) {
         if (cadena[1] == NULL){
             printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
         }else if(esNumero(cadena[1])){
@@ -1030,7 +1089,7 @@ void allocate (char *cadena[], tListM *M){
 void do_AllocateShared (char *tr[], tListM L)   //CUIDADO REVI
 {
     key_t cl;
-    size_t tam;
+  //  size_t tam;
     void *p;
 
     if (tr[0]==NULL) {
@@ -1044,41 +1103,6 @@ void do_AllocateShared (char *tr[], tListM L)   //CUIDADO REVI
         printf ("Asignada memoria compartida de clave %lu en %p\n",(unsigned long) cl, p);
     else
         printf ("Imposible asignar memoria compartida clave %lu:%s\n",(unsigned long) cl,strerror(errno));
-}
-
-void * MapearFichero (char * fichero, int protection)
-{
-    int df, map=MAP_PRIVATE,modo=O_RDONLY;
-    struct stat s;
-    void *p;
-
-    if (protection&PROT_WRITE)
-        modo=O_RDWR;
-    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
-        return NULL;
-    if ((p=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
-        return NULL;
-/* Guardar en la lista    InsertarNodoMmap (&L,p, s.st_size,df,fichero); */
-/* Gurdas en la lista de descriptores usados df, fichero*/
-    return p;
-}
-
-void do_AllocateMmap(char *arg[], tListM L) {
-    char *perm;
-    void *p;
-    int protection=0;
-
-    if (arg[0]==NULL)
-    {ImprimirListaMmap(&L); return;}
-    if ((perm=arg[1])!=NULL && strlen(perm)<4) {
-        if (strchr(perm,'r')!=NULL) protection|=PROT_READ;
-        if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
-        if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
-    }
-    if ((p=MapearFichero(arg[0],protection))==NULL)
-        perror ("Imposible mapear fichero");
-    else
-        printf ("fichero %s mapeado en %p\n", arg[0], p);
 }
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
@@ -1163,7 +1187,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             Cmd_dup(trozos+1,*F);
         }
         else if(strcmp("allocate", trozos[0]) == 0){
-            allocate(trozos+1, M);
+            allocate(trozos+1, M, F);
         }
         else{
             printf("Comando no reconocido\n");
@@ -1273,7 +1297,7 @@ int main() {
 
     bool terminado = false;
     char cadena[MAX];
-    char *trozos[10];
+    char *trozos[15];
     tList L;
     tListF F;
     tListM M;
