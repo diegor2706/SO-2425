@@ -19,7 +19,7 @@ bool createMemoryNode(tPosM *p){
     return *p != MNULL;
 }
 
-bool insertMItem(void *direccion, int tam, char *fecha, char *funcion, char *identificador,int id, tPosM p, tListM *L) {
+bool insertMItem(void *direccion, long tam, char *fecha, char *funcion, char *identificador,int id, tPosM p, tListM *L) {
     tPosM q, r;
 
     if (!createMemoryNode(&q)) {
