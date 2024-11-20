@@ -347,10 +347,11 @@ void ListarFicherosAbiertos(tListF F){
         printf("descriptor: %i, offset: (  ) -> %s %s\n", i->data.descriptor, i->data.nombre, i->data.modo);
         j ++;
         }else{
-            printf("descriptor: %i, offset: ( %d ) -> %s %s\n", i->data.descriptor, i->data.offset, i->data.nombre, i->data.modo);
+            printf("descriptor: %i, offset: ( %ld ) -> %s %s\n", i->data.descriptor, i->data.offset, i->data.nombre, i->data.modo);
             j ++;
         }
     }
+
     while (j < 20 ){
         printf("descriptor: %i, offset: (  ) -> no usado\n",j);
         j++;
@@ -884,19 +885,10 @@ void LlenarMemoria (void *p, size_t cont, unsigned char byte)
     for (i=0; i<cont;i++)
         arr[i]=byte;
 }
-/*
-void InsertarNodoShared (tListM *L, void * p, s.shm_segsz, clave) {
 
-}
-*/
 void ImprimirListaShared(tListM  *L){ // necesaria para do_AllocateCreateshared y do_AllocateShared
 
 }
-
-void ImprimirListaMmap(tListM *L){
-
-}
-
 
 void * ObtenerMemoriaShmget (key_t clave, size_t tam)
 {
@@ -956,13 +948,12 @@ char* fecha_allocate() {
 
 void hacer_malloc(tListM *M, char *cadena){
 
-    int aux = atoi(cadena);
+    long aux = atoi(cadena);
 
     void *dir = malloc(aux);
     printf("Asignados %s bytes en %p\n",cadena, dir);
 
     insertMItem(dir, aux, fecha_allocate(), "malloc", "", 0 , MNULL, M);
-
 
 }
 
@@ -973,7 +964,7 @@ void imprimirMalloc(tListM M){
     for ( i = M ; i != MNULL; i = i->siguiente){
 
         if (i->elemento.id == 0){
-        printf("\t\t %p \t\t %i %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha, i->elemento.funcion);
+        printf("\t\t %p \t\t %ld %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha, i->elemento.funcion);
         }
     }
 }
@@ -982,7 +973,8 @@ void imprimirGeneral(tListM M){
 
     tPosM i ;
     for ( i = M ; i != MNULL; i = i->siguiente){
-            printf("\t\t %p \t\t %i %s %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha, i->elemento.funcion, i->elemento.identificador);
+            printf("\t\t %p \t\t %ld %s %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha,
+                   i->elemento.funcion, i->elemento.identificador);
         }
 }
 
@@ -992,28 +984,27 @@ void imprimirMmap (tListM M) {
     for (i = M; i != MNULL; i = i->siguiente) {
 
         if (i->elemento.id == 1){
-            printf("\t\t %p \t\t %i %s %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha,
+            printf("\t\t %p \t\t %ld %s %s %s\n", i->elemento.direccion, i->elemento.tam, i->elemento.fecha,
                    i->elemento.funcion, i->elemento.identificador);
         }
     }
 }
 
-void * MapearFichero (char * fichero, int protection, tListF F, tListM M) {
+void * MapearFichero (char * fichero[], int protection, tListF F, tListM M) {
     int df, map=MAP_PRIVATE,modo=O_RDONLY;
     struct stat s;
     void *p;
-    printf("%s\n",fichero);
     if (protection&PROT_WRITE)
         modo=O_RDWR;
-    if (stat(fichero,&s)==-1 || (df=open(fichero, modo))==-1)
+    if (stat(fichero[0],&s)==-1 || (df=open(fichero[0], modo))==-1)
         return NULL;
     if ((p=mmap (NULL,s.st_size, protection,map,df,0))==MAP_FAILED)
         return NULL;
+    off_t offset = lseek(df, 0, SEEK_CUR);
+    insertFileItem(df, fichero[0],"Mapeado de", offset, NULL, &F);
 
-    insertMItem(p,s.st_size,fecha_allocate(),fichero, "df", 1, MNULL, &M);
-    Cmd_open((char **) fichero, F);
-/* Guardar en la lista    InsertarNodoMmap (&L,p, s.st_size,df,fichero); */
-/* Gurdas en la lista de descriptores usados df, fichero*/
+    insertMItem(p,s.st_size,fecha_allocate(),fichero[0], "(descriptor df)", 1, MNULL, &M);
+
     return p;
 }
 
@@ -1029,7 +1020,7 @@ void do_AllocateMmap(char *arg[], tListM L,tListF F) {
         if (strchr(perm,'w')!=NULL) protection|=PROT_WRITE;
         if (strchr(perm,'x')!=NULL) protection|=PROT_EXEC;
     }
-    if ((p=MapearFichero(arg[0],protection,F ,L))==NULL)
+    if ((p=MapearFichero(arg,protection,F ,L))==NULL)
         perror ("Imposible mapear fichero");
     else
         printf ("fichero %s mapeado en %p\n", arg[0], p);
@@ -1040,7 +1031,7 @@ void allocate (char *cadena[], tListM *M, tListF  *F){
     pid_t pid = getpid();
 
     if (cadena[0] == NULL){
-        printf("******Lista de bloques asignados malloc para el proceso: %d\n", pid);
+        printf("******Lista de bloques asignados para el proceso: %d\n", pid);
         imprimirGeneral(*M);
         return;
     }
@@ -1058,13 +1049,13 @@ void allocate (char *cadena[], tListM *M, tListF  *F){
         }
     }else if(strcmp(cadena[0], "-mmap") == 0) {
 
-        printf("******Lista de bloques asignados malloc para el proceso: %d\n", pid);
+        printf("******Lista de bloques asignados mmap para el proceso: %d\n", pid);
         do_AllocateMmap(cadena + 1, *M, *F);
 
     }
     else if(strcmp(cadena[0], "-createshared") == 0) {
         if (cadena[1] == NULL){
-            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+            printf("******Lista de bloques asignados shared para el proceso: %d, \n", pid);
         }else if(esNumero(cadena[1])){
 
         }
@@ -1074,7 +1065,7 @@ void allocate (char *cadena[], tListM *M, tListF  *F){
 
     }else if(strcmp(cadena[0], "-shared") == 0){
         if (cadena[1] == NULL){
-            printf("******Lista de bloques asignados malloc para el proceso: %d, \n", pid);
+            printf("******Lista de bloques asignados shared para el proceso: %d, \n", pid);
         }else if(esNumero(cadena[1])){
 
         }
