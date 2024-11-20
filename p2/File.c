@@ -18,7 +18,7 @@ bool createFileNode(tPosF *p) {
     return *p != LNULL;
 }
 
-bool insertFileItem(Descriptor j, char  *m,char  *n, tPosF p, tListF *L) {
+bool insertFileItem(Descriptor j, char  *m,char  *n,long offset, tPosF p, tListF *L) {
 
     tPosF q, r;
 
@@ -29,6 +29,7 @@ bool insertFileItem(Descriptor j, char  *m,char  *n, tPosF p, tListF *L) {
         strcpy(q->data.nombre, n);
         strcpy(q->data.modo, m);
         q->data.descriptor = j;
+        q->data.offset = offset;
 
         q->siguiente = LNULL;
 
@@ -53,6 +54,7 @@ bool insertFileItem(Descriptor j, char  *m,char  *n, tPosF p, tListF *L) {
             strcpy(p->data.nombre, n);
             strcpy(p->data.modo, m);
             p->data.descriptor = j;
+            p->data.offset = offset;
 
 
             q->siguiente = p->siguiente;
