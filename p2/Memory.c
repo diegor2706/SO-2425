@@ -19,44 +19,54 @@ bool createMemoryNode(tPosM *p){
     return *p != MNULL;
 }
 
-bool insertMItem(char *direccion, int tam, char *fecha, char *funcion,tPosM p, tListM *L){
+bool insertMItem(void *direccion, int tam, char *fecha, char *funcion, char *identificador,int id, tPosM p, tListM *L) {
     tPosM q, r;
 
-    if(!createMemoryNode(&q)) {
+    if (!createMemoryNode(&q)) {
         return false;
     } else {
         q->elemento.tam = tam;
         strcpy(q->elemento.fecha, fecha);
         strcpy(q->elemento.funcion, funcion);
-        strcpy(q->elemento.direccion, direccion);
+        q->elemento.direccion = direccion; // Guardar la dirección directamente como puntero
+        strcpy(q->elemento.identificador, identificador);
+        q->elemento.id = id;
 
         q->siguiente = MNULL;
         q->anterior = MNULL;
-        if(isEmptyMemoryList(*L)) {
+
+        if (isEmptyMemoryList(*L)) {
             *L = q;
-        } else if(p == MNULL) {
-            for(r = *L; r->siguiente != MNULL; r = r->siguiente);
+        } else if (p == MNULL) {
+            // Insertar al final
+            for (r = *L; r->siguiente != MNULL; r = r->siguiente);
             r->siguiente = q;
             q->anterior = r;
 
-        } else if(p == *L) {
+        } else if (p == *L) {
+            // Insertar al inicio
             q->siguiente = p;
             p->anterior = q;
             *L = q;
 
         } else {
+            // Insertar en el medio
             q->elemento.tam = p->elemento.tam;
             strcpy(q->elemento.fecha, p->elemento.fecha);
             strcpy(q->elemento.funcion, p->elemento.funcion);
-            strcpy(q->elemento.direccion, p->elemento.direccion);
+            q->elemento.direccion = p->elemento.direccion; // Copiar puntero
+            strcpy(q->elemento.identificador, p->elemento.identificador);
+            q->elemento.id = p->elemento.id;
 
             p->elemento.tam = tam;
             strcpy(p->elemento.fecha, fecha);
             strcpy(p->elemento.funcion, funcion);
-            strcpy(p->elemento.direccion, direccion);
+            p->elemento.direccion = direccion; // Actualizar dirección del nodo actual
+            strcpy(p->elemento.identificador, identificador);
+            p->elemento.id = id;
 
-            if(p->siguiente != MNULL) {
-                p->siguiente->siguiente = q;
+            if (p->siguiente != MNULL) {
+                p->siguiente->anterior = q;
             }
             q->siguiente = p->siguiente;
             p->siguiente = q;
@@ -65,6 +75,7 @@ bool insertMItem(char *direccion, int tam, char *fecha, char *funcion,tPosM p, t
         return true;
     }
 }
+
 
 
 tPosM firstMemory(tListM M){
