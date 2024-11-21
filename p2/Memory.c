@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/shm.h>
+#include <sys/mman.h>
+
 
 void createEmptyMemoryList(tListM *M) {
     *M = MNULL;
@@ -62,8 +65,6 @@ bool insertMItem(void *direccion, long tam, char *fecha, char *funcion, int df,i
             q->elemento.id = p->elemento.id;
             q->elemento.llave = p->elemento.llave;
 
-
-
             p->elemento.tam = tam;
             strcpy(p->elemento.fecha, fecha);
             strcpy(p->elemento.funcion, funcion);
@@ -100,12 +101,114 @@ tPosM nextMemory(tPosM p, tListM M){
     return p->siguiente;
 }
 
+
+
+void deleteMallocMemoryPosition(tPosM p, tListM *M) {
+
+    if (p->elemento.direccion != NULL) {
+        free(p->elemento.direccion);
+    }
+
+
+    if (p == *M) { // Si es el primer nodo
+        *M = (*M)->siguiente;
+        if (!isEmptyMemoryList(*M)) {
+            (*M)->anterior = MNULL;
+        }
+    } else { // Nodo intermedio o final
+        if (p->anterior != MNULL) {
+            p->anterior->siguiente = p->siguiente;
+        }
+        if (p->siguiente != MNULL) {
+            p->siguiente->anterior = p->anterior;
+        }
+    }
+
+
+    free(p);
+}
+
+void deleteMmapMemoryPosition(tPosM p, tListM *M) {
+    if (p->elemento.direccion != NULL) {
+        // Liberar memoria mapeada con munmap
+        if (munmap(p->elemento.direccion, p->elemento.tam) == -1) {
+            perror("Error al liberar memoria mapeada");
+        }
+    }
+
+    // Ajustar los enlaces de la lista
+    if (p == *M) { // Si es el primer nodo
+        *M = (*M)->siguiente;
+        if (!isEmptyMemoryList(*M)) {
+            (*M)->anterior = MNULL;
+        }
+    } else { // Nodo intermedio o final
+        if (p->anterior != MNULL) {
+            p->anterior->siguiente = p->siguiente;
+        }
+        if (p->siguiente != MNULL) {
+            p->siguiente->anterior = p->anterior;
+        }
+    }
+
+    // Liberar el nodo
+    free(p);
+}
+void deleteSharedMemoryPosition(tPosM p, tListM *M) {
+    int shmid;
+
+    // Obtener el shmid usando la clave almacenada
+    if ((shmid = shmget(p->elemento.llave, p->elemento.tam, 0666)) == -1) {
+        perror("Error al obtener el shmid para eliminar memoria compartida");
+    } else {
+        // Desasociamos la memoria compartida del proceso
+        if (shmdt(p->elemento.direccion) == -1) {
+            perror("Error al desasociar memoria compartida");
+        }
+
+        // Eliminamos el segmento de memoria compartida
+        if (shmctl(shmid, IPC_RMID, NULL) == -1) {
+            perror("Error al eliminar segmento de memoria compartida");
+        }
+    }
+
+    // Eliminamos el nodo de la lista
+    if (p == *M) { // Si es el primer nodo
+        *M = (*M)->siguiente;
+        if (!isEmptyMemoryList(*M)) {
+            (*M)->anterior = MNULL;
+        }
+    } else { // Nodo intermedio o final
+        if (p->anterior != MNULL) {
+            p->anterior->siguiente = p->siguiente;
+        }
+        if (p->siguiente != MNULL) {
+            p->siguiente->anterior = p->anterior;
+        }
+    }
+
+    // Liberamos la memoria ocupada por el nodo
+    free(p);
+}
+
+
+
+
 void deleteMemoryList(tListM *M){
     tPosM p;
 
     while(!isEmptyMemoryList(*M)){
+
         p = *M;
-        *M = (*M)->siguiente;
-        free(p);
+        if (p->elemento.id == 0){
+            deleteMallocMemoryPosition(p,M);
+        }else if(p->elemento.id == 1){
+            deleteMmapMemoryPosition(p,M);
+        }
+        else if (p->elemento.id == 2){
+            deleteSharedMemoryPosition(p,M);
+        }  //*M = (*M)->siguiente;
+        //free(p);
     }
 }
+
