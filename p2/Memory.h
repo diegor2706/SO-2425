@@ -36,6 +36,10 @@ bool insertMItem(void *direc,long tam, char *fecha, char *funcion, int df , int 
 tPosM firstMemory(tListM M);
 tPosM lastMemory(tListM M);
 tPosM nextMemory(tPosM p, tListM M);
+void deleteMallocMemoryPosition(tPosM p, tListM *M);
+void deleteSharedMemoryPosition(tPosM p, tListM *M);
+void deleteMmapMemoryPosition(tPosM p, tListM *M);
 void deleteMemoryList(tListM *M);
+
 
 #endif //P2_MEMORY_H
