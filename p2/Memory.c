@@ -9,7 +9,6 @@
 #include <sys/shm.h>
 #include <sys/mman.h>
 
-
 void createEmptyMemoryList(tListM *M) {
     *M = MNULL;
 }
@@ -191,9 +190,6 @@ void deleteSharedMemoryPosition(tPosM p, tListM *M) {
     free(p);
 }
 
-
-
-
 void deleteMemoryList(tListM *M){
     tPosM p;
 
@@ -211,4 +207,3 @@ void deleteMemoryList(tListM *M){
         //free(p);
     }
 }
-
