@@ -25,7 +25,7 @@
 #include <sys/shm.h>
 #include <errno.h>
 #include <sys/mman.h>
-
+#include <sys/wait.h>
 
 #define TAMANO 2048
 
@@ -94,7 +94,6 @@ void quit(bool *terminado, tList *L, tListF *F,tListM *M){
     deleteList(L);
     deleteFileList(F);
     deleteMemoryList(M);
-
 }
 
 void authors (char cadena[]){
@@ -946,7 +945,6 @@ void imprimirMmap (tListM M) {
     }
 }
 
-
 void Recursiva (int n)
 {
     char automatico[TAMANO];
@@ -966,7 +964,6 @@ void LlenarMemoria (void *p, size_t cont, unsigned char byte)
     for (i=0; i<cont;i++)
         arr[i]=byte;
 }
-
 
 void * ObtenerMemoriaShmget(key_t clave, size_t tam, tListM *M) { // tListM por referencia
     void *p;
@@ -1172,6 +1169,7 @@ void deallocate_mmap(char *args[], tListM *M,tListF *F){
     }
     printf("No se encontró el archivo mapeado %s\n", args[1]);
 }
+
 void deallocate_shared(char *args[], tListM *M) {
     tPosM pos;
     key_t key;
@@ -1262,6 +1260,358 @@ void deallocate(char *args[], tListM *M, tListF *F) {
         do_Addr((void *) args[0], M, F);
 }
 
+void memdump(char *args[], tListM M) {
+    void *addr;
+    size_t cont = 25;  // valor por defecto
+    unsigned char *p;
+
+    sscanf(args[0], "%p", &addr);
+
+    if (args[1] != NULL) {
+        cont = (size_t)strtoul(args[1], NULL, 10);
+    }
+
+    tPosM pos;
+    bool direccionValida = false;
+    for (pos = M; pos != MNULL; pos = pos->siguiente) {
+        char *inicio = (char *)pos->elemento.direccion;
+        char *fin = inicio + pos->elemento.tam;
+        char *addr_check = (char *)addr;
+
+        if (addr_check >= inicio && addr_check + cont <= fin) {
+            direccionValida = true;
+            break;
+        }
+    }
+
+    if (!direccionValida) {
+        printf("Dirección de memoria no válida o fuera de rango: %p\n", addr);
+        return;
+    }
+
+    printf("Volcando %zu bytes desde la direccion %p\n", cont, addr);
+    p = (unsigned char *)addr;
+
+    for (size_t i = 0; i < cont; i++) {
+        if (isprint(p[i])) {
+            printf("%c ", p[i]);
+        } else {
+            printf("   ");
+        }
+    }
+    printf("\n");
+
+    for (size_t i = 0; i < cont; i++) {
+        printf("%02x ", p[i]);
+    }
+    printf("\n");
+}
+
+void memfill(char *args[], tListM M) {
+    void *addr;
+    size_t cont;
+    unsigned char byte;
+
+    if (args[0] == NULL || args[1] == NULL || args[2] == NULL) {
+        printf("Uso: memfill [addr] [cont] [ch]\n");
+        return;
+    }
+
+    sscanf(args[0], "%p", &addr);
+    cont = (size_t)strtoul(args[1], NULL, 10);
+    byte = (unsigned char)args[2][1];
+
+    tPosM pos;
+    bool direccionValida = false;
+    for (pos = M; pos != MNULL; pos = pos->siguiente) {
+        if (addr >= pos->elemento.direccion &&
+            (char *)addr + cont <= (char *)pos->elemento.direccion + pos->elemento.tam) {
+            direccionValida = true;
+            break;
+        }
+    }
+
+    if (!direccionValida) {
+        printf("Dirección de memoria no válida o fuera de rango: %p\n", addr);
+        return;
+    }
+
+    printf("Llenando %zu bytes de memoria con el byte %c(%02x) a partir de la direccion %p\n",
+           cont, byte, byte, addr);
+    LlenarMemoria(addr, cont, byte);
+}
+
+void Do_pmap (void) /*sin argumentos*/{
+    pid_t pid;       /*hace el pmap (o equivalente) del proceso actual*/
+    char elpid[32];
+    char *argv[4]={"pmap",elpid,NULL};
+
+    sprintf (elpid,"%d", (int) getpid());
+    if ((pid=fork())==-1){
+        perror ("Imposible crear proceso");
+        return;
+    }
+    if (pid==0){
+        if (execvp(argv[0],argv)==-1)
+            perror("cannot execute pmap (linux, solaris)");
+
+        argv[0]="procstat"; argv[1]="vm"; argv[2]=elpid; argv[3]=NULL;
+        if (execvp(argv[0],argv)==-1)/*No hay pmap, probamos procstat FreeBSD */
+            perror("cannot execute procstat (FreeBSD)");
+
+        argv[0]="procmap",argv[1]=elpid;argv[2]=NULL;
+        if (execvp(argv[0],argv)==-1)  /*probamos procmap OpenBSD*/
+            perror("cannot execute procmap (OpenBSD)");
+
+        argv[0]="vmmap"; argv[1]="-interleave"; argv[2]=elpid;argv[3]=NULL;
+        if (execvp(argv[0],argv)==-1) /*probamos vmmap Mac-OS*/
+            perror("cannot execute vmmap (Mac-OS)");
+        exit(1);
+    }
+    waitpid (pid,NULL,0);
+}
+
+void programFunction1() {}
+void programFunction2() {}
+void programFunction3() {}
+
+void function() {
+    void (*progFunc1)() = programFunction1;
+    void (*progFunc2)() = programFunction2;
+    void (*progFunc3)() = programFunction3;
+
+    void *libFunc1 = malloc;
+    void *libFunc2 = free;
+    void *libFunc3 = strcpy;
+
+    printf("Funciones programa     %p,    %p,    %p\n", (void *)progFunc1, (void *)progFunc2, (void *)progFunc3);
+    printf("Funciones libreria     %p,    %p,    %p\n", libFunc1, libFunc2, libFunc3);
+}
+
+void do_MemVars() {
+    int local1 = 1;
+    int local2 = 2;
+    int local3 = 3;
+
+    static int global1 = 10;
+    static int global2 = 20;
+    static int global3 = 30;
+
+    static int global_ni1;
+    static int global_ni2;
+    static int global_ni3;
+
+    static int static1 = 100;
+    static int static2 = 200;
+    static int static3 = 300;
+
+    static int static_ni1;
+    static int static_ni2;
+    static int static_ni3;
+
+    printf("Variables locales      %p,    %p,    %p\n",
+           (void*)&local1, (void*)&local2, (void*)&local3);
+
+    printf("Variables globales     %p,    %p,    %p\n",
+           (void*)&global1, (void*)&global2, (void*)&global3);
+
+    printf("Var (N.I.)globales     %p,    %p,    %p\n",
+           (void*)&global_ni1, (void*)&global_ni2, (void*)&global_ni3);
+
+    printf("Variables staticas     %p,    %p,    %p\n",
+           (void*)&static1, (void*)&static2, (void*)&static3);
+
+    printf("Var (N.I.)staticas     %p,    %p,    %p\n",
+           (void*)&static_ni1, (void*)&static_ni2, (void*)&static_ni3);
+}
+
+
+void memory(char *args[],tListM M){
+
+    if (strcmp(args[0],"-funcs") == 0){
+        function();
+    }
+    else if(strcmp(args[0],"-vars") == 0){
+        do_MemVars();
+    }
+    else if(strcmp(args[0],"-blocks") == 0){
+        imprimirMalloc(M);
+    }
+    else if(strcmp(args[0],"-all") == 0){
+        do_MemVars();
+        function();
+        imprimirMalloc(M);
+    }
+    else if(strcmp(args[0],"-pmap") == 0){
+        Do_pmap();
+
+    }
+}
+
+ssize_t LeerFichero (char *f, void *p, size_t cont)
+{
+    struct stat s;
+    ssize_t  n;
+    int df,aux;
+
+    if (stat (f,&s)==-1 || (df=open(f,O_RDONLY))==-1)
+        return -1;
+    if (cont==-1)   /* si pasamos -1 como bytes a leer lo leemos entero*/
+        cont=s.st_size;
+    if ((n=read(df,p,cont))==-1){
+        aux=errno;
+        close(df);
+        errno=aux;
+        return -1;
+    }
+    close (df);
+    return n;
+}
+
+void* cadtop(char *cadena) {
+    void *p;
+    sscanf(cadena, "%p", &p);
+    return p;
+}
+
+
+void Cmd_ReadFile (char *ar[])
+{
+    void *p;
+    size_t cont=-1;  /*si no pasamos tamano se lee entero */
+    ssize_t n;
+    if (ar[0]==NULL || ar[1]==NULL){
+        printf ("faltan parametros\n");
+        return;
+    }
+    p=cadtop(ar[1]);  /*convertimos de cadena a puntero*/
+    if (ar[2]!=NULL)
+        cont=(size_t) atoll(ar[2]);
+
+    if ((n=LeerFichero(ar[0],p,cont))==-1)
+        perror ("Imposible leer fichero");
+    else
+        printf ("leidos %lld bytes de %s en %p\n",(long long) n,ar[0],p);
+}
+
+void do_WriteFile(char *args[], tListM M) {
+    void *addr;
+    size_t cont;
+    int fd;
+    ssize_t written;
+
+    sscanf(args[1], "%p", &addr);
+    cont = (size_t)strtoul(args[2], NULL, 10);
+
+    // Verificar que la dirección pertenece a un bloque asignado
+    tPosM pos;
+    bool direccionValida = false;
+    for (pos = M; pos != MNULL; pos = pos->siguiente) {
+        char *inicio = (char *)pos->elemento.direccion;
+        char *fin = inicio + pos->elemento.tam;
+        char *addr_check = (char *)addr;
+
+        if (addr_check >= inicio && addr_check + cont <= fin) {
+            direccionValida = true;
+            break;
+        }
+    }
+
+    if (!direccionValida) {
+        printf("Dirección de memoria no válida o fuera de rango: %p\n", addr);
+        return;
+    }
+
+    // Abrir el archivo
+    if ((fd = open(args[0], O_WRONLY | O_CREAT | O_TRUNC, 0666)) == -1) {
+        perror("Error al abrir el archivo");
+        return;
+    }
+
+    // Escribir en el archivo
+    if ((written = write(fd, addr, cont)) == -1) {
+        perror("Error al escribir en el archivo");
+        close(fd);
+        return;
+    }
+
+    printf("Escritos %zd bytes desde %p al fichero %s\n", written, addr, args[0]);
+    close(fd);
+}
+
+void do_Read(char *args[], tListM M) {
+    void *addr;
+    size_t cont;
+    int df;
+    ssize_t bytes_read;
+
+    df = atoi(args[0]);
+    sscanf(args[1], "%p", &addr);
+    cont = (size_t)strtoul(args[2], NULL, 10);
+
+    tPosM pos;
+    bool direccionValida = false;
+    for (pos = M; pos != MNULL; pos = pos->siguiente) {
+        char *inicio = (char *)pos->elemento.direccion;
+        char *fin = inicio + pos->elemento.tam;
+        char *addr_check = (char *)addr;
+
+        if (addr_check >= inicio && addr_check + cont <= fin) {
+            direccionValida = true;
+            break;
+        }
+    }
+
+    if (!direccionValida) {
+        printf("Dirección de memoria no válida o fuera de rango: %p\n", addr);
+        return;
+    }
+
+    if ((bytes_read = read(df, addr, cont)) == -1) {
+        perror("Error al leer del descriptor");
+        return;
+    }
+
+    printf("Leidos %zd bytes del descriptor %d en %p\n", bytes_read, df, addr);
+}
+
+void do_Write(char *args[], tListM M) {
+    void *addr;
+    size_t cont;
+    int df;
+    ssize_t written;
+
+    df = atoi(args[0]);
+    sscanf(args[1], "%p", &addr);
+    cont = (size_t)strtoul(args[2], NULL, 10);
+
+    tPosM pos;
+    bool direccionValida = false;
+    for (pos = M; pos != MNULL; pos = pos->siguiente) {
+        char *inicio = (char *)pos->elemento.direccion;
+        char *fin = inicio + pos->elemento.tam;
+        char *addr_check = (char *)addr;
+
+        if (addr_check >= inicio && addr_check + cont <= fin) {
+            direccionValida = true;
+            break;
+        }
+    }
+
+    if (!direccionValida) {
+        printf("Dirección de memoria no válida o fuera de rango: %p\n", addr);
+        return;
+    }
+
+    if ((written = write(df, addr, cont)) == -1) {
+        perror("Error al escribir en el descriptor");
+        return;
+    }
+
+    printf("Escritos %zd bytes desde %p al descriptor %d\n", written, addr, df);
+}
+
+
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
     TrocearCadena(cadena, trozos);
 
@@ -1348,6 +1698,32 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if(strcmp("deallocate", trozos[0]) == 0){
             deallocate(trozos+1, M, F);
+        }
+        else if(strcmp("memfill", trozos[0]) == 0){
+            memfill(trozos+1,*M);
+        }
+        else if(strcmp("memdump", trozos[0]) == 0){
+            memdump(trozos+1,*M);
+        }
+        else if(strcmp("memory", trozos[0]) == 0){
+            memory(trozos+1,*M);
+        }
+        else if(strcmp("readfile", trozos[0]) == 0){
+            Cmd_ReadFile(trozos+1);
+
+        }
+        else if(strcmp("writefile", trozos[0]) == 0){
+            do_WriteFile(trozos+1, *M);
+
+        }
+        else if(strcmp("read", trozos[0]) == 0){
+            do_Read(trozos+1, *M);
+        }
+        else if(strcmp("write", trozos[0]) == 0){
+            do_Write(trozos+1, *M);
+        }
+        else if(strcmp("recurse", trozos[0]) == 0){
+            Recursiva(atoi(trozos[1]));
         }
         else{
             printf("Comando no reconocido\n");
