@@ -336,6 +336,68 @@ void help(char cadena[]){
     else if(strcmp("recurse", cadena) == 0){
         printf("recurse [n]\tInvoca a la funcion recursiva n veces\n");
     }
+    else if(strcmp("getuid", cadena) == 0){
+        printf("getuid: Muestra las credenciales del proceso que ejecuta el shell\n");
+    }
+    else if(strcmp("recurse", cadena) == 0){
+        printf("recurse [n]\tInvoca a la funcion recursiva n veces\n");
+    }
+    else if(strcmp("setuid", cadena) == 0){
+        printf("???\n");
+    }
+    else if(strcmp("showbar", cadena) == 0){
+        printf("showbar [var]: Muestra el valor y las direcciones de la variable de entorno var\n");
+    }
+    else if(strcmp("recurse", cadena) == 0){
+        printf("recurse [n]\tInvoca a la funcion recursiva n veces\n");
+    }
+    else if(strcmp("changevar", cadena) == 0){
+        printf("changevar [-a|-e|-p] var valor\tCambia el valor de una variable de entorno\n");
+        printf("-a: accede por el tercer arg de main\n");
+        printf("-e: accede mediante environ\n");
+        printf("-p: accede mediante putenv\n");
+    }
+    else if(strcmp("subsvar", cadena) == 0){
+        printf("subsvar [-a|-e] var1 var2 valor\tSustituye la variable de entorno var1 con var2=valor\n");
+        printf("-a: accede por el tercer arg de main\n");
+        printf("-e: accede mediante environ\n");
+    }
+    else if(strcmp("environ", cadena) == 0){
+        printf("environ [-environ|-addr] \t Muestra el entorno del proceso\n");
+        printf("-environ: accede usando environ (en lugar del tercer arg de main)\n");
+        printf("-addr: muestra el valor y donde se almacenan environ y el 3er arg main\n");
+    }
+    else if(strcmp("search", cadena) == 0){
+        printf("search [-add|-del|-clear|-path]..\tManipula o muestra la ruta de busqueda del shell (path)\n");
+        printf("-add dir: aniade dir a la ruta de busqueda(equiv +dir)\n");
+        printf("-del dir: elimina dir de la ruta de busqueda (equiv -dir)\n");
+        printf("-clear: vacia la ruta de busqueda\n");
+        printf("-path: importa el PATH en la ruta de busqueda\n");
+    }
+    else if(strcmp("exec", cadena) == 0){
+        printf("rexec VAR1 VAR2 ..prog args....[@pri]\tEjecuta, sin crear proceso,prog con argumentos\n"
+               "\t en un entorno que contiene solo las variables VAR1, VAR2...\n");
+    }
+    else if(strcmp("fg", cadena) == 0){
+        printf("fg prog args...\tCrea un proceso que ejecuta en primer plano prog con argumentos\n");
+    }
+    else if(strcmp("fgpri", cadena) == 0){
+        printf("fgpri prio prog args...\tCrea un proceso que ejecuta en primer plano prog con argumentos  con la prioridad cambiada a prio\n");
+    }
+    else if(strcmp("back", cadena) == 0){
+        printf("back prog args...\tCrea un proceso que ejecuta en segundo plano prog con argumentos\n");
+    }
+    else if(strcmp("backpri", cadena) == 0){
+        printf("backpri prio prog args...\tCrea un proceso que ejecuta en segundo plano prog con argumentos con la prioridad cambiada a prio\n");
+    }
+    else if(strcmp("listjobs", cadena) == 0){
+        printf("listjobs \tLista los procesos en segundo plano\n");
+    }
+    else if(strcmp("deljobs", cadena) == 0){
+        printf("deljobs [-term][-sig]\tElimina los procesos de la lista procesos en sp\n");
+        printf("-term: los terminados\n");
+        printf("-sig: los terminados por senal\n");
+    }
     else printf("comando no reconocido\n");
 }
 
@@ -1425,7 +1487,6 @@ void do_MemVars() {
            (void*)&static_ni1, (void*)&static_ni2, (void*)&static_ni3);
 }
 
-
 void memory(char *args[],tListM M){
 
     if (strcmp(args[0],"-funcs") == 0){
@@ -1473,7 +1534,6 @@ void* cadtop(char *cadena) {
     sscanf(cadena, "%p", &p);
     return p;
 }
-
 
 void Cmd_ReadFile (char *ar[])
 {
@@ -1611,10 +1671,8 @@ void do_Write(char *args[], tListM M) {
     printf("Escritos %zd bytes desde %p al descriptor %d\n", written, addr, df);
 }
 
-
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
     TrocearCadena(cadena, trozos);
-
 
     if (trozos[0] != NULL){
         if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0) ){
