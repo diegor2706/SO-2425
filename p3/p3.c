@@ -343,7 +343,9 @@ void help(char cadena[]){
         printf("recurse [n]\tInvoca a la funcion recursiva n veces\n");
     }
     else if(strcmp("setuid", cadena) == 0){
-        printf("???\n");
+        printf("setuid [-l] id\tCambia las credenciales del proceso que ejecuta el shell\n");
+        printf("id: establece la credencial al valor numerico id\n");
+        printf("-l id: establece la credencial a login id\n");
     }
     else if(strcmp("showbar", cadena) == 0){
         printf("showbar [var]: Muestra el valor y las direcciones de la variable de entorno var\n");
@@ -1670,6 +1672,84 @@ void do_Write(char *args[], tListM M) {
 
     printf("Escritos %zd bytes desde %p al descriptor %d\n", written, addr, df);
 }
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+
+void do_getuid() {
+    // Obtiene las credenciales reales y efectivas
+    uid_t real_uid = getuid();         // UID real
+    uid_t effective_uid = geteuid();   // UID efectivo
+
+    // Obtiene la información del usuario real
+    struct passwd *real_user = getpwuid(real_uid);
+    if (!real_user) {
+        perror("Error obteniendo información del usuario real");
+        return;
+    }
+
+    // Obtiene la información del usuario efectivo
+    struct passwd *effective_user = getpwuid(effective_uid);
+    if (!effective_user) {
+        perror("Error obteniendo información del usuario efectivo");
+        return;
+    }
+
+    // Imprime las credenciales reales y efectivas con sus nombres de usuario
+    printf("Credencial real: %d, (%s)\n", real_uid, real_user->pw_name);
+    printf("Credencial efectiva: %d, (%s)\n", effective_uid, effective_user->pw_name);
+}
+
+
+void do_setuid(char *args[]){
+    uid_t uid;
+    struct passwd *pw;
+
+    if (args[0] == NULL) {
+        do_getuid();
+        return;
+    }
+    else if (strcmp(args[0], "-l") == 0) {
+
+        if (args[1] == NULL) {
+            do_getuid();
+            return;
+        }
+
+        if ((pw = getpwnam(args[1])) == NULL) {
+            printf("Usuario no existente %s\n", args[1]);
+            return;
+        }
+        uid = pw->pw_uid;
+    }
+    else {
+
+        char *endptr;
+        uid = (uid_t)strtoul(args[0], &endptr, 10);
+        if (*endptr != '\0') {
+            printf("Error: ID de usuario inválido\n");
+            return;
+        }
+
+        if ((pw = getpwuid(uid)) == NULL) {
+            printf("Usuario no existente %d\n", uid);
+            return;
+        }
+    }
+}
+
+void Cmd_fork (char *tr[])
+{
+    pid_t pid;
+
+    if ((pid=fork())==0){
+/*		VaciarListaProcesos(&LP); Depende de la implementaciÃ³n de cada uno*/
+        printf ("ejecutando proceso %d\n", getpid());
+    }
+    else if (pid!=-1)
+        waitpid (pid,NULL,0);
+}
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
     TrocearCadena(cadena, trozos);
@@ -1782,6 +1862,15 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if(strcmp("recurse", trozos[0]) == 0){
             Recursiva(atoi(trozos[1]));
+        }
+        else if(strcmp("getuid", trozos[0]) == 0){
+            do_getuid();
+        }
+        else if (strcmp("fork", trozos[0]) == 0){
+            Cmd_fork(trozos+1);
+        }
+        else if(strcmp("setuid", trozos[0]) == 0){
+            do_setuid(trozos+1);
         }
         else{
             printf("Comando no reconocido\n");
