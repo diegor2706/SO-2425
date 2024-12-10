@@ -29,7 +29,11 @@
 
 #define TAMANO 2048
 
-void historial (char cadena[], tList L, bool terminado, tListF f, tListM M);
+void historial (char cadena[], tList L, bool terminado, tListF f, tListM M, char *envp[]);
+
+int CambiarVariable(char *modo,char *var, char *valor, char *e[]);
+
+int BuscarVariable(char *var, char *e[]);
 
 void Cmd_open (char * tr[], tListF F);
 
@@ -1673,10 +1677,7 @@ void do_Write(char *args[], tListM M) {
     printf("Escritos %zd bytes desde %p al descriptor %d\n", written, addr, df);
 }
 
-
 void do_getuid() {
-
-
     uid_t real_uid = getuid();         //UID real
     uid_t effective_uid = geteuid();   //UID efectivo
 
@@ -1686,12 +1687,9 @@ void do_getuid() {
     struct passwd *effective_user = getpwuid(effective_uid);
     printf("Credencial efectiva: %d, (%s)\n", effective_uid, effective_user->pw_name);
 
-
 }
 
-
 void do_setuid(char *args[]){
-    uid_t uid;
     struct passwd *pw;
 
     if (args[0] == NULL) {
@@ -1716,8 +1714,89 @@ void do_setuid(char *args[]){
     }
 }
 
-void Cmd_fork (char *tr[])
-{
+int BuscarVariable (char * var, char *e[]) {
+    int pos=0;
+    char aux[MAX];
+
+    strcpy (aux,var);
+    strcat (aux,"=");
+
+    while (e[pos]!=NULL)
+        if (!strncmp(e[pos],aux,strlen(aux)))
+            return (pos);
+        else
+            pos++;
+    errno=ENOENT;   /*no hay tal variable*/
+    return(-1);
+}
+
+int CambiarVariable(char *modo,char * var, char * valor, char *e[]) {
+    int pos;
+    char *aux;
+
+    if (strcmp(modo,"-a") ==0||strcmp(modo,"-p")==0 || strcmp(modo,"-e") ==0){
+        if ((pos=BuscarVariable(var,e))==-1)
+            return(-1);
+
+        if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
+            return -1;
+        strcpy(aux,var);
+        strcat(aux,"=");
+        strcat(aux,valor);
+        e[pos]=aux;
+        return (pos);
+    }
+    else{
+        printf("Uso: changevar [-a|-e|-p] var valor\n");
+        return (-1);
+    }
+}
+
+void do_showvar(char *args[], char *envp[]){
+    extern char **environ;
+
+    if(args[0] == NULL ) {
+        for (int i = 0; envp[i] != NULL; i++) {
+            printf("0x%p->main arg3[%d]=(0x%p) %s\n",
+                   (void*)&envp[i],    // Dirección donde se almacena el puntero
+                   i,                  // Índice
+                   (void*)envp[i],     // Dirección del contenido
+                   envp[i]);           // Contenido de la variable
+        }
+        return;
+    }
+
+    for (int i = 0; args[i] != NULL; i++) {
+        char *value = getenv(args[i]);
+        if (value != NULL) {
+            // Buscar en arg3
+            for (int j = 0; envp[j] != NULL; j++) {
+                if (strncmp(envp[j], args[i], strlen(args[i])) == 0 &&
+                    envp[j][strlen(args[i])] == '=') {
+                    printf("Con arg3 main %s(0x%p) @0x%p\n",
+                           envp[j], (void*)envp[j], (void*)&envp[j]);
+                    break;
+                }
+            }
+            // Buscar en environ
+            for (int j = 0; environ[j] != NULL; j++) {
+                if (strncmp(environ[j], args[i], strlen(args[i])) == 0 &&
+                    environ[j][strlen(args[i])] == '=') {
+                    printf("  Con environ %s(0x%p) @0x%p\n",
+                           environ[j],
+                           (void*)environ[j],
+                           (void*)&environ[j]);
+                    break;
+                }
+            }
+            // Mostrar valor con getenv
+            printf("   Con getenv %s(0x%p)\n",
+                   value, (void*)value);
+        }
+    }
+}
+
+void Cmd_fork (char *tr[]) {
     pid_t pid;
 
     if ((pid=fork())==0){
@@ -1728,7 +1807,7 @@ void Cmd_fork (char *tr[])
         waitpid (pid,NULL,0);
 }
 
-void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M){
+void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, char *envp[]){
     TrocearCadena(cadena, trozos);
 
     if (trozos[0] != NULL){
@@ -1755,7 +1834,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             cd (trozos[1]);
         }
         else if(strcmp("historic", trozos[0]) == 0) {
-            historial(trozos[1], L, *terminado, *F, *M);
+            historial(trozos[1], L, *terminado, *F, *M, envp);
         }
         else if (strcmp("infosys", trozos[0]) == 0){
             infosys();
@@ -1825,11 +1904,9 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if(strcmp("readfile", trozos[0]) == 0){
             Cmd_ReadFile(trozos+1);
-
         }
         else if(strcmp("writefile", trozos[0]) == 0){
             do_WriteFile(trozos+1, *M);
-
         }
         else if(strcmp("read", trozos[0]) == 0){
             do_Read(trozos+1, *M);
@@ -1846,8 +1923,14 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         else if (strcmp("fork", trozos[0]) == 0){
             Cmd_fork(trozos+1);
         }
+        else if (strcmp("showvar", trozos[0]) == 0){
+            do_showvar(trozos+1, envp);
+        }
         else if(strcmp("setuid", trozos[0]) == 0){
             do_setuid(trozos+1);
+        }
+        else if (strcmp("changevar", trozos[0]) == 0){
+            CambiarVariable(trozos[1],trozos[2],trozos[3],envp);
         }
         else{
             printf("Comando no reconocido\n");
@@ -1907,7 +1990,7 @@ void Cmd_open (char *tr[], tListF F) {
     }
 }
 
-void historial (char cadena[], tList L, bool terminado, tListF F, tListM M) {
+void historial (char cadena[], tList L, bool terminado, tListF F, tListM M,char *envp[] ) {
 
     tPosL i, j; // posición del comando en la lista
     int p = 0;  // posición del comando en el historial
@@ -1934,7 +2017,7 @@ void historial (char cadena[], tList L, bool terminado, tListF F, tListM M) {
             printf("Ejecutando hist (%d): %s\n", aux, i->elemento.datos);
 
             strcpy(auxi,i->elemento.datos);
-            procesarEntrada(auxi, trozos, &terminado, L, &F, &M);
+            procesarEntrada(auxi, trozos, &terminado, L, &F, &M, envp);
         }
     }
     else if (('-' == cadena[0]) && esNumero(cadena+1) && (cadena[1] != '\0')) { // repetir los últimos N comandos
@@ -1953,7 +2036,8 @@ void historial (char cadena[], tList L, bool terminado, tListF F, tListM M) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[], char *envp[]) {
+
 
     bool terminado = false;
     char cadena[MAX];
@@ -1970,7 +2054,7 @@ int main() {
     while (!terminado){
         imprimirPrompt();
         leerEntrada(cadena,&L);
-        procesarEntrada(cadena, trozos, &terminado,L, &F, &M);
+        procesarEntrada(cadena, trozos, &terminado,L, &F, &M, envp);
     }
     return 0;
 }
