@@ -1672,33 +1672,21 @@ void do_Write(char *args[], tListM M) {
 
     printf("Escritos %zd bytes desde %p al descriptor %d\n", written, addr, df);
 }
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
+
 
 void do_getuid() {
-    // Obtiene las credenciales reales y efectivas
-    uid_t real_uid = getuid();         // UID real
-    uid_t effective_uid = geteuid();   // UID efectivo
 
-    // Obtiene la información del usuario real
+
+    uid_t real_uid = getuid();         //UID real
+    uid_t effective_uid = geteuid();   //UID efectivo
+
     struct passwd *real_user = getpwuid(real_uid);
-    if (!real_user) {
-        perror("Error obteniendo información del usuario real");
-        return;
-    }
-
-    // Obtiene la información del usuario efectivo
-    struct passwd *effective_user = getpwuid(effective_uid);
-    if (!effective_user) {
-        perror("Error obteniendo información del usuario efectivo");
-        return;
-    }
-
-    // Imprime las credenciales reales y efectivas con sus nombres de usuario
     printf("Credencial real: %d, (%s)\n", real_uid, real_user->pw_name);
+
+    struct passwd *effective_user = getpwuid(effective_uid);
     printf("Credencial efectiva: %d, (%s)\n", effective_uid, effective_user->pw_name);
+
+
 }
 
 
@@ -1721,21 +1709,10 @@ void do_setuid(char *args[]){
             printf("Usuario no existente %s\n", args[1]);
             return;
         }
-        uid = pw->pw_uid;
+        setuid(pw->pw_uid);
     }
     else {
-
-        char *endptr;
-        uid = (uid_t)strtoul(args[0], &endptr, 10);
-        if (*endptr != '\0') {
-            printf("Error: ID de usuario inválido\n");
-            return;
-        }
-
-        if ((pw = getpwuid(uid)) == NULL) {
-            printf("Usuario no existente %d\n", uid);
-            return;
-        }
+        printf("Imposible cambiar credencial: Operation not permitted\n");
     }
 }
 
