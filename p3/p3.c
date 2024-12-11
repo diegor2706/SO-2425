@@ -31,7 +31,7 @@
 
 void historial (char cadena[], tList L, bool terminado, tListF f, tListM M, char *envp[]);
 
-int CambiarVariable(char *modo,char *var, char *valor, char *e[]);
+int CambiarVariable(char *var, char *valor, char *e[]);
 
 int BuscarVariable(char *var, char *e[]);
 
@@ -1730,26 +1730,22 @@ int BuscarVariable (char * var, char *e[]) {
     return(-1);
 }
 
-int CambiarVariable(char *modo,char * var, char * valor, char *e[]) {
+/*cambia una variable en el entorno que se le pasa como parÃ¡metro*/
+/*lo hace directamente, no usa putenv*/
+int CambiarVariable(char * var, char * valor, char *e[]) {
     int pos;
     char *aux;
 
-    if (strcmp(modo,"-a") ==0||strcmp(modo,"-p")==0 || strcmp(modo,"-e") ==0){
-        if ((pos=BuscarVariable(var,e))==-1)
-            return(-1);
-
-        if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
-            return -1;
-        strcpy(aux,var);
-        strcat(aux,"=");
-        strcat(aux,valor);
-        e[pos]=aux;
-        return (pos);
-    }
-    else{
-        printf("Uso: changevar [-a|-e|-p] var valor\n");
-        return (-1);
-    }
+    if ((pos=BuscarVariable(var,e))==-1)
+        return(-1);
+    printf("paso\n");
+    if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
+        return -1;
+    strcpy(aux,var);
+    strcat(aux,"=");
+    strcat(aux,valor);
+    e[pos]=aux;
+    return (pos);
 }
 
 void do_showvar(char *args[], char *envp[]){
@@ -1795,6 +1791,86 @@ void do_showvar(char *args[], char *envp[]){
         }
     }
 }
+
+// función auxiliar para cambiar variable
+void Cambio(char *args[], char *envp[]){
+    extern char **environ;
+    char buffer[1024];
+    if (strcmp(args[0],"-a") == 0){
+        CambiarVariable(args[1],args[2], envp );
+    }
+    else if (strcmp(args[0],"-e") == 0){
+        CambiarVariable(args[1],args[2], environ );
+    }
+    else if ((strcmp(args[0], "-p") == 0)) {
+            // Using putenv - can create new variables
+            snprintf(buffer, sizeof(buffer), "%s=%s", args[1], args[2]);
+            if (putenv(strdup(buffer)) != 0) {
+                perror("Error al cambiar variable con putenv");
+            }
+    }
+    else printf("Opción no válida. Use -a, -e o -p\n");
+}
+
+void do_subsvar(char *args[], char *env[]) {
+    extern char **environ;
+
+    if (args[0] == NULL || args[1] == NULL || args[2] == NULL || args[3] == NULL) {
+        printf("Uso: subsvar [-a|-e] var1 var2 valor\n");
+        return;
+    }
+
+    char *v1 = args[1];    // Variable a sustituir (DISPLAY)
+    char *v2 = args[2];    // Nueva variable (biblioteca)
+    char *val = args[3];   // Nuevo valor (ruido)
+    int pos;
+
+    if (strcmp(args[0], "-a") == 0) {
+        // Usando el tercer argumento de main
+        if ((pos = BuscarVariable(v1, env)) == -1) {
+            printf("No existe la variable %s\n", v1);
+            return;
+        }
+
+        // Crear la nueva variable en la misma posición
+        char *aux = malloc(strlen(v2) + strlen(val) + 2);
+        if (aux == NULL) {
+            perror("Error de asignación de memoria");
+            return;
+        }
+
+        strcpy(aux, v2);
+        strcat(aux, "=");
+        strcat(aux, val);
+        env[pos] = aux;
+
+        // Actualizar environ para mantener la consistencia
+        environ[pos] = env[pos];
+    }
+    else if (strcmp(args[0], "-e") == 0) {
+        // Usando environ
+        if ((pos = BuscarVariable(v1, environ)) == -1) {
+            printf("No existe la variable %s\n", v1);
+            return;
+        }
+
+        // Crear la nueva variable en la misma posición
+        char *aux = malloc(strlen(v2) + strlen(val) + 2);
+        if (aux == NULL) {
+            perror("Error de asignación de memoria");
+            return;
+        }
+
+        strcpy(aux, v2);
+        strcat(aux, "=");
+        strcat(aux, val);
+        environ[pos] = aux;
+    }
+    else {
+        printf("Opción no válida. Use -a o -e\n");
+    }
+}
+
 
 void Cmd_fork (char *tr[]) {
     pid_t pid;
@@ -1930,7 +2006,10 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_setuid(trozos+1);
         }
         else if (strcmp("changevar", trozos[0]) == 0){
-            CambiarVariable(trozos[1],trozos[2],trozos[3],envp);
+            Cambio(trozos+1,envp);
+        }
+        else if (strcmp("subsvar", trozos[0]) == 0){
+            do_subsvar(trozos+1, envp);
         }
         else{
             printf("Comando no reconocido\n");
