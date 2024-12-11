@@ -1748,6 +1748,22 @@ int CambiarVariable(char * var, char * valor, char *e[]) {
     return (pos);
 }
 
+int CambiarVariableSUS(char * var1,char * var, char * valor, char *e[]) {
+    int pos;
+    char *aux;
+
+    if ((pos=BuscarVariable(var1,e))==-1)
+        return(-1);
+    printf("paso\n");
+    if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
+        return -1;
+    strcpy(aux,var);
+    strcat(aux,"=");
+    strcat(aux,valor);
+    e[pos]=aux;
+    return (pos);
+}
+
 void do_showvar(char *args[], char *envp[]){
     extern char **environ;
 
@@ -1823,64 +1839,98 @@ void do_subsvar(char *args[], char *env[]) {
     char *v1 = args[1];    // Variable a sustituir (DISPLAY)
     char *v2 = args[2];    // Nueva variable (biblioteca)
     char *val = args[3];   // Nuevo valor (ruido)
-    int pos;
 
     if (strcmp(args[0], "-a") == 0) {
         // Usando el tercer argumento de main
-        if ((pos = BuscarVariable(v1, env)) == -1) {
-            printf("No existe la variable %s\n", v1);
-            return;
-        }
+        CambiarVariable(v2,val,env);
+        CambiarVariableSUS(v1,v2, val, env);
 
-        // Crear la nueva variable en la misma posición
-        char *aux = malloc(strlen(v2) + strlen(val) + 2);
-        if (aux == NULL) {
-            perror("Error de asignación de memoria");
-            return;
-        }
-
-        strcpy(aux, v2);
-        strcat(aux, "=");
-        strcat(aux, val);
-        env[pos] = aux;
-
-        // Actualizar environ para mantener la consistencia
-        environ[pos] = env[pos];
     }
     else if (strcmp(args[0], "-e") == 0) {
         // Usando environ
-        if ((pos = BuscarVariable(v1, environ)) == -1) {
-            printf("No existe la variable %s\n", v1);
-            return;
-        }
-
-        // Crear la nueva variable en la misma posición
-        char *aux = malloc(strlen(v2) + strlen(val) + 2);
-        if (aux == NULL) {
-            perror("Error de asignación de memoria");
-            return;
-        }
-
-        strcpy(aux, v2);
-        strcat(aux, "=");
-        strcat(aux, val);
-        environ[pos] = aux;
+        CambiarVariableSUS(v1,v2,val,environ);
     }
     else {
         printf("Opción no válida. Use -a o -e\n");
     }
 }
 
+void do_Environ(char *args[], char *envp[]){
+    extern char **environ;
+
+    if (args[0] == NULL){
+        do_showvar(args,envp);
+    }
+    else if (strcmp(args[0], "-environ") == 0) {
+        for (int i = 0; environ[i] != NULL; i++) {
+            printf("0x%p->environ[%d]=(0x%p) %s\n",
+                   (void*)&environ[i],
+                   i,
+                   (void*)environ[i],
+                   environ[i]);
+        }
+    }
+    else if (strcmp(args[0], "-addr") == 0) {
+        printf("environ: %p (almacenado en %p)\n", (void *)environ, (void *)&environ);
+        printf("main arg3: %p (almacenado en %p)\n", (void *)envp, (void *)&envp);
+    }
+
+    else {
+        printf("Uso: environ [-environ|-addr]\n");
+    }
+}
 
 void Cmd_fork (char *tr[]) {
     pid_t pid;
 
     if ((pid=fork())==0){
-/*		VaciarListaProcesos(&LP); Depende de la implementaciÃ³n de cada uno*/
+/*		VaciarListaProcesos(&LP); Depende de la implementación de cada uno*/
         printf ("ejecutando proceso %d\n", getpid());
     }
     else if (pid!=-1)
         waitpid (pid,NULL,0);
+}
+
+void do_search(){
+
+}
+
+char * Ejecutable (char *s){
+    static char path[MAXNAME];
+    struct stat st;
+    char *p;
+    if (s==NULL || (p=SearchListFirst())==NULL)
+        return s;
+    if (s[0]=='/' || !strncmp (s,"./",2) || !strncmp (s,"../",3))
+        return s; /*s is an absolute pathname*/
+    strncpy (path, p, MAXNAME-1);strncat (path,"/",MAXNAME-1); strncat(path,s,MAXNAME-1);
+    if (lstat(path,&st)!=-1)
+        return path;
+    while ((p=SearchListNext())!=NULL){
+        strncpy (path, p, MAXNAME-1);strncat (path,"/",MAXNAME-1); strncat(path,s,MAXNAME-1);
+        if (lstat(path,&st)!=-1)
+            return path;
+    }
+    return s;
+}
+
+int Execpve(char *tr[], char **NewEnv, int * pprio)
+{
+    char *p; /*NewEnv contains the address of the new environment*/
+/*pprio the address of the new priority*/
+/*NULL indicates no change in environment and/or priority*/
+    if (tr[0]==NULL || (p=Ejecutable(tr[0]))==NULL){
+        errno=EFAULT;
+        return-1;
+    }
+    if (pprio !=NULL && setpriority(PRIO_PROCESS,getpid(),*pprio)==-1 && errno){
+        printf ("Imposible cambiar prioridad: %s\n",strerror(errno));
+        return -1;
+    }
+    if (NewEnv==NULL)
+        return execv (p,tr);
+    else
+        return execve (p, tr, NewEnv);
 }
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, char *envp[]){
@@ -2010,6 +2060,15 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
         }
         else if (strcmp("subsvar", trozos[0]) == 0){
             do_subsvar(trozos+1, envp);
+        }
+        else if (strcmp("environ", trozos[0]) == 0){
+            do_Environ(trozos+1, envp);
+        }
+        else if (strcmp("search", trozos[0]) == 0){
+            do_search();
+        }
+        else if (strcmp("prueba", trozos[0]) == 0){
+            printf("%i",Execpve());
         }
         else{
             printf("Comando no reconocido\n");
