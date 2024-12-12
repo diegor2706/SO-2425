@@ -10,7 +10,8 @@
 #include "Lista.c"          // Incluye el archivo de encabezado correspondiente
 #include "File.c"           // Incluye el archivo de encabezado correspondiente
 #include "Memory.c"         // Incluye el archivo de encabezado correspondiente
-#include "Search.c"         // Inclute el archivo de encabezado correspondiente
+#include "Search.c"         // Incluye el archivo de encabezado correspondiente
+#include "Jobs.c"           // Incluye el archivo de encabezado correspondiente
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>         // para el pid y el ppid
@@ -30,7 +31,7 @@
 
 #define TAMANO 2048
 
-void historial (char cadena[], tList L, bool terminado, tListF f, tListM M, tListS S, char *envp[]);
+void historial (char cadena[], tList L, bool terminado, tListF f, tListM M, tListS S,tListJ J, char *envp[]);
 
 int CambiarVariable(char *var, char *valor, char *e[]);
 
@@ -94,12 +95,13 @@ void leerEntrada(char * cadena, tList *L){
     insertItem(cadena, LNULL, L);
 }
 
-void quit(bool *terminado, tList *L, tListF *F,tListM *M,tListS *S){
+void quit(bool *terminado, tList *L, tListF *F,tListM *M,tListS *S,tListJ *J){
     *terminado = true;
     deleteList(L);
     deleteFileList(F);
     deleteMemoryList(M);
     deleteListSE(S);
+    deleteJobList(J);
 }
 
 void authors (char cadena[]){
@@ -1912,7 +1914,20 @@ void do_search(char * args[], tListS *S){
         }
     }
     else if ((strcmp(args[0], "-del") == 0)){
-        // usar deleteItem, falta la respuesta de Paula
+        if (args[1] == NULL) {
+            printf("Imposible realizar operacion -del: Bad address\n");
+            return;
+        }
+        tPosS pos = *S;
+        while (pos != NULL) {
+            if (strcmp(pos->elemento.datos, args[1]) == 0) {
+                if (deleteItemSE(pos, S)) {
+                    return;
+                }
+                break;
+            }
+            pos = pos->siguiente;
+        }
     }
     else if ((strcmp(args[0], "-clear") == 0)){
         deleteListSE(S);
@@ -1941,12 +1956,12 @@ void do_search(char * args[], tListS *S){
     else printf("Argumento incorrecto %s\n", args[0]);
 }
 
-void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S, char *envp[]){
+void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S, tListJ *J, char *envp[]) {
     TrocearCadena(cadena, trozos);
 
     if (trozos[0] != NULL){
         if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0) ){
-            quit(terminado, &L, F, M, S);
+            quit(terminado, &L, F, M, S, J);
         }
         else if(strcmp("authors", trozos[0]) == 0){
             authors(trozos[1]);
@@ -1968,7 +1983,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             cd (trozos[1]);
         }
         else if(strcmp("historic", trozos[0]) == 0) {
-            historial(trozos[1], L, *terminado, *F, *M, *S, envp);
+            historial(trozos[1], L, *terminado, *F, *M, *S, *J, envp);
         }
         else if (strcmp("infosys", trozos[0]) == 0){
             infosys();
@@ -2076,7 +2091,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_search(trozos+1, S);
         }
         else if (strcmp("exec", trozos[0]) == 0){
-            
+
         }
         else{
             printf("Comando no reconocido\n");
@@ -2136,7 +2151,7 @@ void Cmd_open (char *tr[], tListF F) {
     }
 }
 
-void historial (char cadena[], tList L, bool terminado, tListF F, tListM M, tListS S, char *envp[] ) {
+void historial (char cadena[], tList L, bool terminado, tListF F, tListM M, tListS S, tListJ J, char *envp[] ) {
 
     tPosL i, j; // posición del comando en la lista
     int p = 0;  // posición del comando en el historial
@@ -2163,7 +2178,7 @@ void historial (char cadena[], tList L, bool terminado, tListF F, tListM M, tLis
             printf("Ejecutando hist (%d): %s\n", aux, i->elemento.datos);
 
             strcpy(auxi,i->elemento.datos);
-            procesarEntrada(auxi, trozos, &terminado, L, &F, &M,&S ,envp);
+            procesarEntrada(auxi, trozos, &terminado, L, &F, &M, &S, &J, envp);
         }
     }
     else if (('-' == cadena[0]) && esNumero(cadena+1) && (cadena[1] != '\0')) { // repetir los últimos N comandos
@@ -2184,25 +2199,27 @@ void historial (char cadena[], tList L, bool terminado, tListF F, tListM M, tLis
 
 int main(int argc, char *argv[], char *envp[]) {
 
-
     bool terminado = false;
     char cadena[MAX];
     char *trozos[15];
+
     tList L;
     tListF F;
     tListM M;
     tListS S;
+    tListJ J;
 
     createEmptyList(&L);
     createEmptyFileList(&F);
     createEmptyMemoryList(&M);
     inicicializarFileLIst(&F);
     createEmptyListSE(&S);
+    createEmptyJobList(&J);
 
     while (!terminado){
         imprimirPrompt();
         leerEntrada(cadena,&L);
-        procesarEntrada(cadena, trozos, &terminado,L, &F, &M, &S,envp);
+        procesarEntrada(cadena, trozos, &terminado,L, &F, &M, &S, &J, envp);
     }
     return 0;
 }
