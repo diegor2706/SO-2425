@@ -24,6 +24,7 @@
 #include <pwd.h>            // necesaria para el listfile -long
 #include <grp.h>            // necesaria para el listfile -long
 #include <sys/resource.h>   // necesaria para el exec
+#include <signal.h>         // necesaria para el back
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <errno.h>
@@ -96,7 +97,7 @@ void leerEntrada(char * cadena, tList *L){
     insertItem(cadena, LNULL, L);
 }
 
-void quit(bool *terminado, tList *L, tListF *F,tListM *M,tListS *S,tListJ *J){
+void quit(bool *terminado, tList *L, tListF *F,tListM *M,tListS *S,tListJ *J) {
     *terminado = true;
     deleteList(L);
     deleteFileList(F);
@@ -117,6 +118,20 @@ void authors (char cadena[]){
     }else{
         printf("Comando 'authors %s' no reconocido\n", cadena);
     }
+}
+
+char *dateJobs() {
+    time_t tiempo_actual;
+    struct tm *tiempo_local;
+
+    tiempo_actual = time(NULL);
+
+    tiempo_local = localtime(&tiempo_actual);
+
+    char *buffer = malloc(80 * sizeof(char));
+
+    strftime(buffer, 80, "%d/%m/%Y %H:%M:%S", tiempo_local);
+    return buffer;
 }
 
 void date (char cadena[]) {
@@ -1743,7 +1758,6 @@ int CambiarVariable(char * var, char * valor, char *e[]) {
 
     if ((pos=BuscarVariable(var,e))==-1)
         return(-1);
-    printf("paso\n");
     if ((aux=(char *)malloc(strlen(var)+strlen(valor)+2))==NULL)
         return -1;
     strcpy(aux,var);
@@ -1824,11 +1838,11 @@ void Cambio(char *args[], char *envp[]){
         CambiarVariable(args[1],args[2], environ );
     }
     else if ((strcmp(args[0], "-p") == 0)) {
-            // Using putenv - can create new variables
-            snprintf(buffer, sizeof(buffer), "%s=%s", args[1], args[2]);
-            if (putenv(strdup(buffer)) != 0) {
-                perror("Error al cambiar variable con putenv");
-            }
+        // Using putenv - can create new variables
+        snprintf(buffer, sizeof(buffer), "%s=%s", args[1], args[2]);
+        if (putenv(strdup(buffer)) != 0) {
+            perror("Error al cambiar variable con putenv");
+        }
     }
     else printf("Opción no válida. Use -a, -e o -p\n");
 }
@@ -1885,11 +1899,11 @@ void do_Environ(char *args[], char *envp[]){
     }
 }
 
-void Cmd_fork (char *tr[]) {
+void Cmd_fork (char *tr[], tListJ *J) {
     pid_t pid;
 
     if ((pid=fork())==0){
-/*		VaciarListaProcesos(&LP); Depende de la implementación de cada uno*/
+        deleteJobList(J);
         printf ("ejecutando proceso %d\n", getpid());
     }
     else if (pid!=-1)
@@ -1908,7 +1922,7 @@ void do_search(char * args[], tListS *S){
     }
     else if ((strcmp(args[0], "-add") == 0)){
         if (args[1] == NULL){
-        printf("Imposible realizar operacion -add: Bad address\n");
+            printf("Imposible realizar operacion -add: Bad address\n");
         }
         else{
             insertItemSE(args[1], NULL, S);
@@ -2002,19 +2016,450 @@ int Execpve(char *tr[], char **NewEnv, const int *pprio, tListS *S) {
         return execve(p, tr, NewEnv);
 }
 
+void ejecuto(char *args[], tListS *S){
 
-void exec(char *args[]){
+    Execpve(args,NULL, NULL, S);
+    printf("hola\n");
+}
 
+void do_exec(char *args[], tListS *S) {
+    char *new_env[1024] = { NULL };  // Entorno nuevo
+    int env_count = 0;               // Contador de variables de entorno
+    int i = 0;                       // Índice para recorrer `args`
 
+    if (args[0] == NULL) {
+        fprintf(stderr, "Imposible ejecutar: Bad address.\n");
+        return;
+    }
 
+    //Añada las variables de entorno necesarias
+    while (args[i] != NULL && getenv(args[i]) != NULL) {
+        new_env[env_count] = strdup(args[i]); //Copia y hace un malloc de las variabales de entorno
+        env_count++;
+        i++;
+    }
+
+    if (args[i] == NULL) {
+        fprintf(stderr, "Imposible ejecutar: Bad address.\n");
+        return;
+    }
+
+    //Si hay variables de entorno pone de ultimo valor NULL en el array
+    if (env_count > 0) {
+        new_env[env_count] = NULL;
+    }
+
+    //Hace un array del ejecutable sin las variables de entorno
+    char *exec_args[1024];
+    int j = 0;
+    while (args[i] != NULL) {
+        exec_args[j++] = args[i++];
+    }
+    exec_args[j] = NULL; // Terminar la lista de argumentos con NULL
+
+    // Ejecutar el programa con el entorno adecuado
+    if (Execpve(exec_args, (env_count > 0 ? new_env : NULL), NULL, S) == -1) {
+        perror("Error al ejecutar el comando");
+    }
+    // Liberar memoria asignada para las variables de entorno
+    for (int k = 0; k < env_count; k++) {
+        free(new_env[k]);
+    }
+}
+
+void do_ExecPri(char *args[], tListS *S) {
+    char **new_env = NULL;
+    char *exec_args[MAX];
+    int i = 0, j = 0, env_vars = 0;
+    int priority;
+
+    if (args[0] == NULL || args[1] == NULL) {
+        printf("Imposible ejecutar: Bad adress\n");
+        return;
+    }
+    priority = atoi(args[0]);
+    i = 1;
+
+    while (args[i] != NULL) {
+        char *value = getenv(args[i]);
+        if (value == NULL) break;
+        env_vars++;
+        i++;
+    }
+    if (args[i] == NULL) {
+        printf("Error: no se especificó el ejecutable\n");
+        return;
+    }
+    if (env_vars > 0) {
+        new_env = malloc((env_vars + 1) * sizeof(char *));
+        if (new_env == NULL) {
+            perror("Error al asignar memoria");
+            return;
+        }
+
+        for (j = 0; j < env_vars; j++) {
+            char *value = getenv(args[j + 1]);
+            char *env_str = malloc(strlen(args[j + 1]) + strlen(value) + 2);
+            if (env_str == NULL) {
+                perror("Error al asignar memoria");
+                while (--j >= 0) free(new_env[j]);
+                free(new_env);
+                return;
+            }
+            sprintf(env_str, "%s=%s", args[j + 1], value);
+            new_env[j] = env_str;
+        }
+        new_env[j] = NULL;
+    }
+
+    j = 0;
+    exec_args[j++] = args[i];  // Nombre del programa
+    i++;
+    while (args[i] != NULL && j < MAX - 1) {
+        exec_args[j++] = args[i++];
+    }
+    exec_args[j] = NULL;
+
+    if (Execpve(exec_args, new_env, &priority, S) == -1) {
+        perror("Error en execpri");
+
+        if (new_env != NULL) {
+            for (i = 0; i < env_vars; i++) {
+                free(new_env[i]);
+            }
+            free(new_env);
+        }
+    }
+}
+
+void do_Fg (char *args[], tListS *S) {
+    char **new_env = NULL;
+    char *exec_args[MAX];
+    int i = 0, j = 0, env_vars = 0;
+    pid_t pid;
+
+    if (args[0] == NULL) {
+        printf("No ejecutado: Bad adress\n");
+        return;
+    }
+    while (args[i] != NULL) {
+        char *value = getenv(args[i]);
+        if (value == NULL) break;
+        env_vars++;
+        i++;
+    }
+    if (args[i] == NULL) {
+        printf("Error: no se especificó el ejecutable\n");
+        return;
+    }
+    if (env_vars > 0) {
+        new_env = malloc((env_vars + 1) * sizeof(char *));
+        if (new_env == NULL) {
+            perror("Error al asignar memoria");
+            return;
+        }
+        for (j = 0; j < env_vars; j++) {
+            char *value = getenv(args[j]);
+            char *env_str = malloc(strlen(args[j]) + strlen(value) + 2);
+            if (env_str == NULL) {
+                perror("Error al asignar memoria");
+                while (--j >= 0) free(new_env[j]);
+                free(new_env);
+                return;
+            }
+            sprintf(env_str, "%s=%s", args[j], value);
+            new_env[j] = env_str;
+        }
+        new_env[j] = NULL;
+    }
+    j = 0;
+    exec_args[j++] = args[i];
+    i++;
+    while (args[i] != NULL && j < MAX - 1) {
+        exec_args[j++] = args[i++];
+    }
+    exec_args[j] = NULL;
+
+    if ((pid = fork()) == -1) {
+        perror("Error en fork");
+        return;
+    }
+
+    if (pid == 0) {
+
+        if (Execpve(exec_args, new_env, NULL, S) == -1) {
+            perror("No ejecutado:");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        waitpid(pid, NULL, 0);
+        if (new_env != NULL) {
+            for (i = 0; i < env_vars; i++) {
+                free(new_env[i]);
+            }
+            free(new_env);
+        }
+    }
+}
+
+void do_FgPri(char *args[], tListS *S) {
+    char **new_env = NULL;
+    char *exec_args[MAX];
+    int i = 0, j = 0, env_vars = 0;
+    pid_t pid;
+    int priority;
+
+    if (args[0] == NULL || args[1] == NULL) {
+        printf("No ejecutado: Bad adress\n");
+        return;
+    }
+    priority = atoi(args[0]);
+    i = 1;
+
+    while (args[i] != NULL) {
+        char *value = getenv(args[i]);
+        if (value == NULL) break;
+        env_vars++;
+        i++;
+    }
+
+    if (args[i] == NULL) {
+        printf("Error: no se especificó el ejecutable\n");
+        return;
+    }
+    if (env_vars > 0) {
+        new_env = malloc((env_vars + 1) * sizeof(char *));
+        if (new_env == NULL) {
+            perror("Error al asignar memoria");
+            return;
+        }
+        for (j = 0; j < env_vars; j++) {
+            char *value = getenv(args[j + 1]);
+            char *env_str = malloc(strlen(args[j + 1]) + strlen(value) + 2);
+            if (env_str == NULL) {
+                perror("Error al asignar memoria");
+                while (--j >= 0) free(new_env[j]);
+                free(new_env);
+                return;
+            }
+            sprintf(env_str, "%s=%s", args[j + 1], value);
+            new_env[j] = env_str;
+        }
+        new_env[j] = NULL;
+    }
+    j = 0;
+    exec_args[j++] = args[i];
+    i++;
+    while (args[i] != NULL && j < MAX - 1) {
+        exec_args[j++] = args[i++];
+    }
+    exec_args[j] = NULL;
+
+    if ((pid = fork()) == -1) {
+        perror("Error en fork");
+        return;
+    }
+
+    if (pid == 0) {
+        if (Execpve(exec_args, new_env, &priority, S) == -1) {
+            perror("Error en exec");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        waitpid(pid, NULL, 0);
+        if (new_env != NULL) {
+            for (i = 0; i < env_vars; i++) {
+                free(new_env[i]);
+            }
+            free(new_env);
+        }
+    }
+}
+
+struct SEN {
+    char *nombre;
+    int senal;
+};
+
+static struct SEN sigstrnum[]={
+        {"HUP", SIGHUP}, {"INT", SIGINT}, {"QUIT", SIGQUIT},
+        {"ILL", SIGILL}, {"TRAP", SIGTRAP},{"ABRT", SIGABRT},
+        {"IOT", SIGIOT}, {"BUS", SIGBUS}, {"FPE", SIGFPE},
+        {"KILL", SIGKILL},{"USR1", SIGUSR1}, {"SEGV", SIGSEGV},
+        {"USR2", SIGUSR2}, {"PIPE", SIGPIPE}, {"ALRM", SIGALRM},
+        {"TERM", SIGTERM}, {"CHLD", SIGCHLD}, {"CONT", SIGCONT},
+        {"STOP", SIGSTOP}, {"TSTP", SIGTSTP},{"TTIN", SIGTTIN},
+        {"TTOU", SIGTTOU}, {"URG", SIGURG}, {"XCPU", SIGXCPU},
+        {"XFSZ", SIGXFSZ},{"VTALRM", SIGVTALRM}, {"PROF", SIGPROF},
+        {"WINCH", SIGWINCH}, {"IO", SIGIO}, {"SYS", SIGSYS},
+/*senales que no hay en todas partes*/
+#ifdef SIGPOLL
+        {"POLL", SIGPOLL},
+#endif
+#ifdef SIGPWR
+        {"PWR", SIGPWR},
+#endif
+#ifdef SIGEMT
+        {"EMT", SIGEMT},
+#endif
+#ifdef SIGINFO
+        {"INFO", SIGINFO},
+#endif
+#ifdef SIGSTKFLT
+        {"STKFLT", SIGSTKFLT},
+#endif
+#ifdef SIGCLD
+        {"CLD", SIGCLD},
+#endif
+#ifdef SIGLOST
+        {"LOST", SIGLOST},
+#endif
+#ifdef SIGCANCEL
+        {"CANCEL", SIGCANCEL},
+#endif
+#ifdef SIGTHAW
+        {"THAW", SIGTHAW},
+#endif
+#ifdef SIGFREEZE
+        {"FREEZE", SIGFREEZE},
+#endif
+#ifdef SIGLWP
+        {"LWP", SIGLWP},
+#endif
+#ifdef SIGWAITING
+        {"WAITING", SIGWAITING},
+#endif
+        {NULL,-1},
+};    /*fin array sigstrnum */
+
+int ValorSenal(char * sen)  /*devuelve el numero de senial a partir del nombre*/
+{
+    int i;
+    for (i=0; sigstrnum[i].nombre!=NULL; i++)
+        if (!strcmp(sen, sigstrnum[i].nombre))
+            return sigstrnum[i].senal;
+    return -1;
+}
+
+char *NombreSenal(int sen)  /*devuelve el nombre senal a partir de la senal*/
+{			/* para sitios donde no hay sig2str*/
+    int i;
+    for (i=0; sigstrnum[i].nombre!=NULL; i++)
+        if (sen==sigstrnum[i].senal)
+            return sigstrnum[i].nombre;
+    return ("SIGUNKNOWN");
+}
+
+char *getProcessStatus(pid_t pid) {
+    int status;
+    if (waitpid(pid, &status, WNOHANG | WUNTRACED) == 0) {
+        return "ACTIVO"; // Proceso aún está en ejecución
+    }
+
+    if (WIFEXITED(status)) {
+        return "TERMINADO"; // Proceso finalizó correctamente
+    } else if (WIFSIGNALED(status)) {
+        return "SIGNALED"; // Proceso terminó debido a una señal
+    } else if (WIFSTOPPED(status)) {
+        return "STOPPED"; // Proceso está detenido
+    }
+    return "UNKNOWN"; // Estado desconocido
+}
+
+void do_Back(char *args[], tListS *S) {
+
+    char **new_env = NULL;
+    char *exec_args[MAX];
+    int i = 0, j = 0, env_vars = 0;
+    pid_t pid;
+
+    if (args[0] == NULL) {
+        printf("No ejecutado: Bad adress\n");
+        return;
+    }
+    while (args[i] != NULL) {
+        char *value = getenv(args[i]);
+        if (value == NULL) break;
+        env_vars++;
+        i++;
+    }
+
+    if (args[i] == NULL) {
+        printf("Error: no se especificó el ejecutable\n");
+        return;
+    }
+    if (env_vars > 0) {
+        new_env = malloc((env_vars + 1) * sizeof(char *));
+        if (new_env == NULL) {
+            perror("Error al asignar memoria");
+            return;
+        }
+        for (j = 0; j < env_vars; j++) {
+            char *value = getenv(args[j]);
+            char *env_str = malloc(strlen(args[j]) + strlen(value) + 2);
+            if (env_str == NULL) {
+                perror("Error al asignar memoria");
+                while (--j >= 0) free(new_env[j]);
+                free(new_env);
+                return;
+            }
+            sprintf(env_str, "%s=%s", args[j], value);
+            new_env[j] = env_str;
+        }
+        new_env[j] = NULL;
+    }
+
+    j = 0;
+    exec_args[j++] = args[i];
+    i++;
+    while (args[i] != NULL && j < MAX - 1) {
+        exec_args[j++] = args[i++];
+    }
+    exec_args[j] = NULL;
+    if ((pid = fork()) == -1) {
+        perror("Error en fork");
+        return;
+    }
+    if (pid == 0) {
+
+        signal(ValorSenal("TSTP"), SIG_IGN);  // SIGTSTP
+        signal(ValorSenal("TTIN"), SIG_IGN);  // SIGTTIN
+        signal(ValorSenal("TTOU"), SIG_IGN);  // SIGTTOU
+        if (Execpve(exec_args, new_env, NULL, S) == -1) {
+            perror("Error en exec");
+            exit(EXIT_FAILURE);
+        }
+
+    }
+    if (new_env != NULL) {
+        for (i = 0; i < env_vars; i++) {
+            free(new_env[i]);
+        }
+        free(new_env);
+    }
+    printf("%s", getProcessStatus(pid));
+    //insertJobItem(pid,dateJobs(),)
+}
+
+void do_backPRI(){
 
 }
 
-void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S, tListJ *J, char *envp[]) {
+void do_listjobs(){
+
+}
+
+void do_deljobs(){
+
+}
+
+void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S,
+                     tListJ *J, char *envp[]) {
+
     TrocearCadena(cadena, trozos);
 
     if (trozos[0] != NULL){
-        if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0) ){
+        if ((strcmp("quit", trozos[0]) == 0)|| (strcmp("exit", trozos[0]) == 0) || (strcmp("bye", trozos[0]) == 0)) {
             quit(terminado, &L, F, M, S, J);
         }
         else if(strcmp("authors", trozos[0]) == 0){
@@ -2124,7 +2569,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_getuid();
         }
         else if (strcmp("fork", trozos[0]) == 0){
-            Cmd_fork(trozos+1);
+            Cmd_fork(trozos+1, J);
         }
         else if (strcmp("showvar", trozos[0]) == 0){
             do_showvar(trozos+1, envp);
@@ -2145,7 +2590,28 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_search(trozos+1, S);
         }
         else if (strcmp("exec", trozos[0]) == 0){
-                do_exec(trozos+1, J);
+            do_exec(trozos+1, S);
+        }
+        else if (strcmp("execpri", trozos[0]) == 0){
+            do_ExecPri(trozos+1,S);
+        }
+        else if (strcmp("fg", trozos[0]) == 0){
+            do_Fg(trozos+1, S);
+        }
+        else if (strcmp("fgpri", trozos[0]) == 0){
+            do_FgPri(trozos+1, S);
+        }
+        else if (strcmp("back", trozos[0]) == 0){
+            do_Back(trozos+1, S);
+        }
+        else if (strcmp("backpri", trozos[0]) == 0){
+            do_backPRI();
+        }
+        else if (strcmp("listjobs", trozos[0]) == 0){
+            do_listjobs();
+        }
+        else if (strcmp("deljobs", trozos[0]) == 0){
+            do_deljobs();
         }
         else{
             printf("Comando no reconocido\n");
@@ -2275,5 +2741,6 @@ int main(int argc, char *argv[], char *envp[]) {
         leerEntrada(cadena,&L);
         procesarEntrada(cadena, trozos, &terminado,L, &F, &M, &S, &J, envp);
     }
+
     return 0;
 }
