@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <pwd.h>            // necesaria para el listfile -long
 #include <grp.h>            // necesaria para el listfile -long
+#include <sys/resource.h>   // necesaria para el exec
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <errno.h>
@@ -1956,6 +1957,68 @@ void do_search(char * args[], tListS *S){
     else printf("Argumento incorrecto %s\n", args[0]);
 }
 
+char *Ejecutable(char *s, tListS *S) {
+    static char path[MAX];
+    struct stat st;
+    tPosS pos;
+
+    if (s == NULL || isEmptyListSE(*S))
+        return s;
+
+    if (s[0] == '/' || !strncmp(s, "./", 2) || !strncmp(s, "../", 3))
+        return s; /* Es una ruta absoluta */
+
+    for (pos = firstSE(*S); pos != SNULL; pos = nextSE(pos, *S)) {
+        strncpy(path, pos->elemento.datos, MAX - 1);
+        strncat(path, "/", MAX - strlen(path) - 1);
+        strncat(path, s, MAX - strlen(path) - 1);
+
+        if (lstat(path, &st) != -1)
+            return path;
+    }
+
+    return s;
+}
+
+int Execpve(char *tr[], char **NewEnv, const int *pprio, tListS *S) {
+    char *p; /* NewEnv contiene la dirección del nuevo entorno */
+    /* pprio contiene la dirección de la nueva prioridad */
+    /* NULL indica que no hay cambios en el entorno o prioridad */
+
+    if (tr[0] == NULL || (p = Ejecutable(tr[0], S)) == NULL) {
+        errno = EFAULT;
+        return -1;
+    }
+
+    if (pprio != NULL && setpriority(PRIO_PROCESS, getpid(), *pprio) == -1 && errno) {
+        printf("Imposible cambiar prioridad: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (NewEnv == NULL)
+        return execv(p, tr);
+    else
+        return execve(p, tr, NewEnv);
+}
+
+
+void prueba(char *args[], tListJ *J){
+
+    tPosJ i;
+
+    insertJobItem(1234, "12/10/2012","FINISHED", "VAlderruten", 123, 000, "Gex_video", NULL, J);
+    printf("HOLA\n");
+
+
+
+    if (args[0] == NULL){
+        for (i = *J; i != NULL ; i = i->siguiente){
+            printf("%d %s %s %s %i %i %s", i->elemento.PID, i->elemento.fecha,i->elemento.Status,i->elemento.nombre_usuario,
+                   i->elemento.comandLine, i->elemento.prioridad, i->elemento.nombre_archivo);
+        }
+    }
+}
+
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S, tListJ *J, char *envp[]) {
     TrocearCadena(cadena, trozos);
 
@@ -2091,7 +2154,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_search(trozos+1, S);
         }
         else if (strcmp("exec", trozos[0]) == 0){
-
+                prueba(trozos+1, J);
         }
         else{
             printf("Comando no reconocido\n");
