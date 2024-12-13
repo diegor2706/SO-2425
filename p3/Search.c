@@ -68,6 +68,30 @@ tPosS nextSE(tPosS p, tListS S){
     return p->siguiente;
 }
 
+bool deleteSearchPosition(tPosS p, tListS *S) {
+    tPosS q;
+
+    if (isEmptyListSE(*S) || p == SNULL) {
+        return false;
+    }
+
+    if (p == *S) {
+        *S = p->siguiente;
+        if (*S != SNULL) {
+            (*S)->anterior = SNULL;
+        }
+    } else {
+        q = p->anterior;
+        q->siguiente = p->siguiente;
+        if (p->siguiente != SNULL) {
+            p->siguiente->anterior = q;
+        }
+    }
+    free(p);
+    return true;
+}
+
+
 
 void deleteListSE(tListS *S) {
     tPosS p;

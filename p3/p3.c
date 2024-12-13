@@ -1913,6 +1913,7 @@ void do_search(char * args[], tListS *S){
         else{
             insertItemSE(args[1], NULL, S);
         }
+
     }
     else if ((strcmp(args[0], "-del") == 0)){
         if (args[1] == NULL) {
@@ -1922,7 +1923,7 @@ void do_search(char * args[], tListS *S){
         tPosS pos = *S;
         while (pos != NULL) {
             if (strcmp(pos->elemento.datos, args[1]) == 0) {
-                if (deleteItemSE(pos, S)) {
+                if (deleteSearchPosition(pos, S)) {
                     return;
                 }
                 break;
@@ -2002,21 +2003,11 @@ int Execpve(char *tr[], char **NewEnv, const int *pprio, tListS *S) {
 }
 
 
-void prueba(char *args[], tListJ *J){
-
-    tPosJ i;
-
-    insertJobItem(1234, "12/10/2012","FINISHED", "VAlderruten", 123, 000, "Gex_video", NULL, J);
-    printf("HOLA\n");
+void exec(char *args[]){
 
 
 
-    if (args[0] == NULL){
-        for (i = *J; i != NULL ; i = i->siguiente){
-            printf("%d %s %s %s %i %i %s", i->elemento.PID, i->elemento.fecha,i->elemento.Status,i->elemento.nombre_usuario,
-                   i->elemento.comandLine, i->elemento.prioridad, i->elemento.nombre_archivo);
-        }
-    }
+
 }
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S, tListJ *J, char *envp[]) {
@@ -2154,7 +2145,7 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_search(trozos+1, S);
         }
         else if (strcmp("exec", trozos[0]) == 0){
-                prueba(trozos+1, J);
+                do_exec(trozos+1, J);
         }
         else{
             printf("Comando no reconocido\n");

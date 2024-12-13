@@ -28,6 +28,7 @@ bool insertItemSE(tItemS d, tPosS p, tListS *S);
 tPosS firstSE(tListS S);
 tPosS lastSE(tListS S);
 tPosS nextSE(tPosS p, tListS S);
+bool deleteSearchPosition(tPosS p, tListS *S);
 void deleteListSE(tListS *S);
 
 #endif //p3_SEARCH_H
