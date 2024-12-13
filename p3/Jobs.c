@@ -23,20 +23,23 @@ bool createJobNode(tPosJ *p){
     return *p != JNULL;
 }
 
-bool insertJobItem(void *direccion, long tam, char *fecha, char *funcion, int df,int id, key_t  llave, tPosJ p, tListJ *J) {
-
+bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario,
+                   int comandLine, int prioridad, char *nombre_archivo, tPosJ p, tListJ *J) {
     tPosJ q, r;
 
     if (!createJobNode(&q)) {
         return false;
     } else {
-        q->elemento.tam = tam;
+
         strcpy(q->elemento.fecha, fecha);
-        strcpy(q->elemento.funcion, funcion);
-        q->elemento.direccion = direccion; // Guardar la dirección directamente como puntero
-        q->elemento.df = df;
-        q->elemento.id = id;
-        q->elemento.llave = llave;
+        strcpy(q->elemento.Status, Status);
+        strcpy(q->elemento.nombre_usuario, nombre_usuario);
+        strcpy(q->elemento.nombre_archivo, nombre_archivo);
+        q->elemento.PID = PID;
+        q->elemento.comandLine = comandLine;
+        q->elemento.prioridad = prioridad;
+
+
 
         q->siguiente = JNULL;
         q->anterior = JNULL;
@@ -57,21 +60,24 @@ bool insertJobItem(void *direccion, long tam, char *fecha, char *funcion, int df
 
         } else {
             // Insertar en el medio
-            q->elemento.tam = p->elemento.tam;
-            strcpy(q->elemento.fecha, p->elemento.fecha);
-            strcpy(q->elemento.funcion, p->elemento.funcion);
-            q->elemento.direccion = p->elemento.direccion; // Copiar puntero
-            q->elemento.df = p->elemento.df;
-            q->elemento.id = p->elemento.id;
-            q->elemento.llave = p->elemento.llave;
 
-            p->elemento.tam = tam;
+            strcpy(q->elemento.fecha, p->elemento.fecha);
+            strcpy(q->elemento.Status, p->elemento.Status);
+            strcpy(q->elemento.nombre_usuario, p->elemento.nombre_usuario);
+            strcpy(q->elemento.nombre_archivo, p->elemento.nombre_archivo);
+            q->elemento.PID= p->elemento.PID;
+            q->elemento.comandLine = p->elemento.comandLine;
+            q->elemento.prioridad = p->elemento.prioridad;
+
+
             strcpy(p->elemento.fecha, fecha);
-            strcpy(p->elemento.funcion, funcion);
-            p->elemento.direccion = direccion; // Actualizar dirección del nodo actual
-            p->elemento.df = df;
-            p->elemento.id = id;
-            p->elemento.llave = llave;
+            strcpy(p->elemento.Status, Status);
+            strcpy(p->elemento.nombre_usuario, nombre_usuario);
+            strcpy(p->elemento.nombre_archivo, nombre_archivo);
+
+            p->elemento.PID = PID;
+            p->elemento.comandLine = comandLine;
+            p->elemento.prioridad = prioridad;
 
             if (p->siguiente != JNULL) {
                 p->siguiente->anterior = q;
@@ -118,7 +124,6 @@ bool deleteJobPosition(tPosJ p, tListJ *J) {
             p->siguiente->anterior = q;
         }
     }
-
     free(p);
     return true;
 }
