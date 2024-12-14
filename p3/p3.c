@@ -2016,11 +2016,6 @@ int Execpve(char *tr[], char **NewEnv, const int *pprio, tListS *S) {
         return execve(p, tr, NewEnv);
 }
 
-void ejecuto(char *args[], tListS *S){
-
-    Execpve(args,NULL, NULL, S);
-    printf("hola\n");
-}
 
 void do_exec(char *args[], tListS *S) {
     char *new_env[1024] = { NULL };  // Entorno nuevo
@@ -2350,40 +2345,28 @@ char *NombreSenal(int sen)  /*devuelve el nombre senal a partir de la senal*/
     return ("SIGUNKNOWN");
 }
 
-char *getProcessStatus(pid_t pid) {
-    int status;
-    if (waitpid(pid, &status, WNOHANG | WUNTRACED) == 0) {
-        return "ACTIVO"; // Proceso aún está en ejecución
-    }
-
-    if (WIFEXITED(status)) {
-        return "TERMINADO"; // Proceso finalizó correctamente
-    } else if (WIFSIGNALED(status)) {
-        return "SIGNALED"; // Proceso terminó debido a una señal
-    } else if (WIFSTOPPED(status)) {
-        return "STOPPED"; // Proceso está detenido
-    }
-    return "UNKNOWN"; // Estado desconocido
-}
-
-void do_Back(char *args[], tListS *S) {
+void do_Back(char *args[], tListS *S, tListJ *J) {
 
     char **new_env = NULL;
     char *exec_args[MAX];
-    int i = 0, j = 0, env_vars = 0;
+    int i = 0, j = 0, env_vars = 0, status, priority;
     pid_t pid;
+    char *job_status;
+    char *date = dateJobs();
+    char tipo_signal[MAX] = "000";
 
     if (args[0] == NULL) {
-        printf("No ejecutado: Bad adress\n");
+        printf("No ejecutado: Bad address\n");
         return;
     }
+
+    // Procesar variables de entorno
     while (args[i] != NULL) {
         char *value = getenv(args[i]);
         if (value == NULL) break;
         env_vars++;
         i++;
     }
-
     if (args[i] == NULL) {
         printf("Error: no se especificó el ejecutable\n");
         return;
@@ -2416,41 +2399,191 @@ void do_Back(char *args[], tListS *S) {
         exec_args[j++] = args[i++];
     }
     exec_args[j] = NULL;
+
     if ((pid = fork()) == -1) {
         perror("Error en fork");
         return;
     }
+
     if (pid == 0) {
 
-        signal(ValorSenal("TSTP"), SIG_IGN);  // SIGTSTP
-        signal(ValorSenal("TTIN"), SIG_IGN);  // SIGTTIN
-        signal(ValorSenal("TTOU"), SIG_IGN);  // SIGTTOU
         if (Execpve(exec_args, new_env, NULL, S) == -1) {
-            perror("Error en exec");
+            perror("No ejecutado:");
             exit(EXIT_FAILURE);
         }
+    } else {
+        waitpid(pid, &status, 0);
 
-    }
-    if (new_env != NULL) {
-        for (i = 0; i < env_vars; i++) {
-            free(new_env[i]);
+        // Determinar estado
+        if (WIFEXITED(status)) {
+            job_status = "FINISHED";
+        } else if (WIFSIGNALED(status)) {
+            job_status = "SIGNALED";
+            int signal_num = WTERMSIG(status);
+            strcpy(tipo_signal,"KEEEE");
+            strcpy(tipo_signal,NombreSenal(signal_num));
+
+        } else if (WIFSTOPPED(status)) {
+            job_status = "STOPPED";
+        } else {
+            job_status = "ACTIVE";
         }
-        free(new_env);
+
+
+        priority = (strcmp(job_status, "STOPPED") == 0) ? 0 : -1;
+
+
+        insertJobItem(pid, date, job_status, getlogin(), tipo_signal, priority, exec_args[0], NULL, J);
+
+        if (new_env != NULL) {
+            for (i = 0; i < env_vars; i++) {
+                free(new_env[i]);
+            }
+            free(new_env);
+        }
     }
-    printf("%s", getProcessStatus(pid));
-    //insertJobItem(pid,dateJobs(),)
 }
 
-void do_backPRI(){
+
+
+void do_backPRI(char *args[],int priority ,tListS *S,tListJ  *J){
+
+    char **new_env = NULL;
+    char *exec_args[MAX];
+    int i = 0, j = 0, env_vars = 0, status;
+    pid_t pid;
+    char *job_status;
+    char *date = dateJobs();
+    char tipo_signal[MAX] = "000";
+
+
+    if (args[0] == NULL) {
+        printf("No ejecutado: Bad address\n");
+        return;
+    }
+
+
+    while (args[i] != NULL) {
+        char *value = getenv(args[i]);
+        if (value == NULL) break;
+        env_vars++;
+        i++;
+    }
+    if (args[i] == NULL) {
+        printf("Error: no se especificó el ejecutable\n");
+        return;
+    }
+    if (env_vars > 0) {
+        new_env = malloc((env_vars + 1) * sizeof(char *));
+        if (new_env == NULL) {
+            perror("Error al asignar memoria");
+            return;
+        }
+        for (j = 0; j < env_vars; j++) {
+            char *value = getenv(args[j]);
+            char *env_str = malloc(strlen(args[j]) + strlen(value) + 2);
+            if (env_str == NULL) {
+                perror("Error al asignar memoria");
+                while (--j >= 0) free(new_env[j]);
+                free(new_env);
+                return;
+            }
+            sprintf(env_str, "%s=%s", args[j], value);
+            new_env[j] = env_str;
+        }
+        new_env[j] = NULL;
+    }
+
+
+    j = 0;
+    exec_args[j++] = args[i];
+    i++;
+    while (args[i] != NULL && j < MAX - 1) {
+        exec_args[j++] = args[i++];
+    }
+    exec_args[j] = NULL;
+
+    if ((pid = fork()) == -1) {
+        perror("Error en fork");
+        return;
+    }
+
+    if (pid == 0) {
+        // Proceso hijo
+        if (Execpve(exec_args, new_env, NULL, S) == -1) {
+            perror("No ejecutado:");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+
+        // Proceso padre
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status)) {
+            job_status = "TERMINADO";
+        } else if (WIFSIGNALED(status)) {
+            job_status = "SENALADO";
+            int signal_num = WTERMSIG(status);
+            strcpy(tipo_signal,NombreSenal(signal_num));
+
+        } else if (WIFSTOPPED(status)) {
+            job_status = "PARADO";
+        } else {
+            job_status = "ACTIVO";
+        }
+
+        priority = (strcmp(job_status, "PARADO") == 0) ? priority : -1;
+
+        insertJobItem(pid, date, job_status, getlogin(), tipo_signal, priority, exec_args[0], NULL, J);
+
+        if (new_env != NULL) {
+            for (i = 0; i < env_vars; i++) {
+                free(new_env[i]);
+            }
+            free(new_env);
+        }
+    }
 
 }
 
-void do_listjobs(){
+void do_listjobs(char *args[],tListJ J){
 
+    tPosJ i;
+
+    if (args[0] == NULL){
+
+        for (i = J; i !=NULL; i = i->siguiente)
+        printf(" %i\t%s p=%i %s %s (%s) %s\n",i->elemento.PID,i->elemento.nombre_usuario,i->elemento.prioridad, i->elemento.fecha, i->elemento.Status, i->elemento.tipo_signal, i->elemento.nombre_archivo);
+    }
 }
 
-void do_deljobs(){
+void do_deljobs(char *args[], tListJ *J) {
+    tPosJ i;
 
+    if (args[0] == NULL) {
+        do_listjobs(args, *J);
+        return;
+    }
+
+    if (strcmp("-term", args[0]) == 0) {
+        for (i = *J; i != NULL;i = i->siguiente) {
+
+            if (strcmp(i->elemento.Status, "TERMINADO") == 0) {
+                deleteJobPosition(i, J);
+            }
+
+        }
+    } else if (strcmp("-sig", args[0]) == 0) {
+        for (i = *J; i != NULL; i = i->siguiente) {
+
+            if (strcmp(i->elemento.Status, "SEÑALADO") == 0) {
+                deleteJobPosition(i, J);
+            }
+            
+        }
+    } else {
+        do_listjobs(args, *J);
+    }
 }
 
 void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tListF *F, tListM *M, tListS *S,
@@ -2602,16 +2735,16 @@ void procesarEntrada(char * cadena, char *trozos[], bool *terminado, tList L, tL
             do_FgPri(trozos+1, S);
         }
         else if (strcmp("back", trozos[0]) == 0){
-            do_Back(trozos+1, S);
+            do_Back(trozos+1,S,J);
         }
         else if (strcmp("backpri", trozos[0]) == 0){
-            do_backPRI();
+            do_backPRI(trozos+2, atoi(trozos[1]),S ,J);
         }
         else if (strcmp("listjobs", trozos[0]) == 0){
-            do_listjobs();
+            do_listjobs(trozos+1, *J);
         }
         else if (strcmp("deljobs", trozos[0]) == 0){
-            do_deljobs();
+            do_deljobs(trozos+1, J);
         }
         else{
             printf("Comando no reconocido\n");

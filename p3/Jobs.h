@@ -14,9 +14,10 @@ typedef struct elementJ{
     char fecha [MAXI];
     char Status[MAXI];
     char nombre_usuario[MAXI];
-    int comandLine;
+    char tipo_signal[MAXI];
     int prioridad;
     char nombre_archivo[MAXI];
+
 } elementJ;
 
 typedef struct jNode *tPosJ;
@@ -32,7 +33,7 @@ typedef tPosJ tListJ;
 void createEmptyJobList(tListJ *J);
 bool isEmptyJobList(tListJ J);
 bool createJobNode(tPosJ *p);
-bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario, int comandLine, int prioridad, char *nombre_archivo, tPosJ p, tListJ *J);
+bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario, char *tipo_signal, int prioridad, char *nombre_archivo, tPosJ p, tListJ *J);
 tPosJ firstJob(tListJ J);
 tPosJ lastJob(tListJ J);
 tPosJ nextJob(tPosJ p, tListJ J);

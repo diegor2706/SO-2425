@@ -24,7 +24,7 @@ bool createJobNode(tPosJ *p){
 }
 
 bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario,
-                   int comandLine, int prioridad, char *nombre_archivo, tPosJ p, tListJ *J) {
+                   char *tipo_signal, int prioridad, char *nombre_archivo, tPosJ p, tListJ *J) {
     tPosJ q, r;
 
     if (!createJobNode(&q)) {
@@ -35,8 +35,8 @@ bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario,
         strcpy(q->elemento.Status, Status);
         strcpy(q->elemento.nombre_usuario, nombre_usuario);
         strcpy(q->elemento.nombre_archivo, nombre_archivo);
+        strcpy(q->elemento.tipo_signal, tipo_signal);
         q->elemento.PID = PID;
-        q->elemento.comandLine = comandLine;
         q->elemento.prioridad = prioridad;
 
 
@@ -65,8 +65,8 @@ bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario,
             strcpy(q->elemento.Status, p->elemento.Status);
             strcpy(q->elemento.nombre_usuario, p->elemento.nombre_usuario);
             strcpy(q->elemento.nombre_archivo, p->elemento.nombre_archivo);
+            strcpy(q->elemento.tipo_signal, p->elemento.tipo_signal);
             q->elemento.PID= p->elemento.PID;
-            q->elemento.comandLine = p->elemento.comandLine;
             q->elemento.prioridad = p->elemento.prioridad;
 
 
@@ -74,9 +74,8 @@ bool insertJobItem(int PID, char *fecha, char *Status, char *nombre_usuario,
             strcpy(p->elemento.Status, Status);
             strcpy(p->elemento.nombre_usuario, nombre_usuario);
             strcpy(p->elemento.nombre_archivo, nombre_archivo);
-
+            strcpy(p->elemento.tipo_signal, tipo_signal);
             p->elemento.PID = PID;
-            p->elemento.comandLine = comandLine;
             p->elemento.prioridad = prioridad;
 
             if (p->siguiente != JNULL) {
